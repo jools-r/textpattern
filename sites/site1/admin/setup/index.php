@@ -125,7 +125,8 @@ eod;
                     )
                 */
             );
-            $lastkey = array_pop(array_keys($symlinks));
+            $symlink_keys = array_keys($symlinks);
+            $lastkey = array_pop($symlink_keys);
 
             // Relative path from current /admin/setup directory to multisite base directory
             $symlink_relpath = '..'.DS.'..'.DS;
