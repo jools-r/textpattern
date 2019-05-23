@@ -267,7 +267,7 @@ function doDiagnostics()
     }
 
     if (isset($txpcfg['multisite_root_path'])) {
-        $basePath = $txpcfg['multisite_root_path'].DS.'admin';
+        $basePath = $txpcfg['multisite_admin_path'];
 
         if (@is_dir($basePath.DS.'setup') && ($txp_is_dev || !Txp::get('\Textpattern\Admin\Tools')->removeFiles($basePath, 'setup'))) {
             $fail['w'][] = array('setup_still_exists', 'still_exists', array('{path}' => $basePath.DS.'setup'.DS));
@@ -579,6 +579,8 @@ function doDiagnostics()
         (isset($txpcfg['multisite_root_path'])) ? gTxt('diag_multisite_root_path').cs.$txpcfg['multisite_root_path'].n : '',
 
         priv.'$path_to_site'.cs.$path_to_site.n,
+        
+        (isset($path_to_admin)) ? priv.'$path_to_admin'.cs.$path_to_admin.n : '',
 
         gTxt('diag_txp_path').cs.txpath.n,
 
