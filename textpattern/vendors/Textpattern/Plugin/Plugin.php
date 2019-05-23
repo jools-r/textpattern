@@ -195,8 +195,10 @@ class Plugin
 
     public function read($name, $normalize = true)
     {
+        $path_to_admin = get_pref('path_to_admin');
+
         $name = sanitizeForFile($name);
-        $dir = txpath.DS.'plugins'.DS.$name;
+        $dir = $path_to_admin.DS.'plugins'.DS.$name;
 
         if (!is_dir($dir)) {
             return false;
@@ -434,12 +436,13 @@ class Plugin
     public function updateFile($name, $code = null)
     {
         $filename = sanitizeForFile($name);
+        $path_to_admin = get_pref('path_to_admin');
 
         if (!isset($code)) {
-            return \Txp::get('\Textpattern\Admin\Tools')->removeFiles(txpath.DS.'plugins', $filename);
+            return \Txp::get('\Textpattern\Admin\Tools')->removeFiles($path_to_admin.DS.'plugins', $filename);
         }
 
-        if(!is_dir($dir = txpath.DS.'plugins'.DS.$filename)) {
+        if(!is_dir($dir = $path_to_admin.DS.'plugins'.DS.$filename)) {
             mkdir($dir);
         }
 

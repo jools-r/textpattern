@@ -1439,7 +1439,7 @@ function load_plugin($name, $force = false)
 
         $txp_current_plugin = $name;
         $dir = sanitizeForFile($name);
-        $filename = txpath.DS.'plugins'.DS.$dir.DS.$dir.'.php';
+        $filename = $prefs['path_to_admin'].DS.'plugins'.DS.$dir.DS.$dir.'.php';
 
         if (!is_file($filename)) {
             $code = safe_field("code", 'txp_plugin', "name = '".doSlash($name)."'");
@@ -1877,7 +1877,7 @@ function load_plugins($type = false)
                 $trace->start("[Loading plugin: '{$a['name']}' version '{$a['version']}']");
 
                 $dir = $a['name'];
-                $filename = txpath.DS.'plugins'.DS.$dir.DS.$dir.'.php';
+                $filename = $prefs['path_to_admin'].DS.'plugins'.DS.$dir.DS.$dir.'.php';
         
                 if (!is_file($filename)) {
                     $code = safe_field('code', 'txp_plugin', "name='".doSlash($a['name'])."'");

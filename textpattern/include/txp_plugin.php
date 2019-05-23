@@ -580,9 +580,10 @@ function plugin_upload()
     $plugin = array();
 
     if($_FILES["theplugin"]["name"]) {
+        $path_to_admin = get_pref('path_to_admin');
         $filename = $_FILES["theplugin"]["name"];
         $source = $_FILES["theplugin"]["tmp_name"];
-        $target_path = rtrim(get_pref('temp_dir', txpath.DS.'plugins'), DS).DS.$filename;
+        $target_path = rtrim(get_pref('temp_dir', $path_to_admin.DS.'plugins'), DS).DS.$filename;
 
         if(move_uploaded_file($source, $target_path)) {
             $name = pathinfo($target_path, PATHINFO_FILENAME);
@@ -598,7 +599,7 @@ function plugin_upload()
                     }
                 }
 
-                $zip->extractTo(txpath.DS.'plugins'.(empty($makedir) ? '' : DS.$name));
+                $zip->extractTo($path_to_admin.DS.'plugins'.(empty($makedir) ? '' : DS.$name));
                 $zip->close();
                 $plugin = Txp::get('\Textpattern\Plugin\Plugin')->read($name);
             }
