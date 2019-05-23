@@ -160,7 +160,12 @@ if ($connected && numRows(safe_query("SHOW TABLES LIKE '".PFX."textpattern'"))) 
             if (empty($txpcfg['admin_url'])) {
                 $txpcfg['cookie_domain'] = '';
             } else {
-                $txpcfg['cookie_domain'] = rtrim(substr($txpcfg['admin_url'], strpos($txpcfg['admin_url'], '.') + 1), '/');
+                $admin_parts = explode(".",$txpcfg['admin_url']);
+                if (count($admin_parts) > 2) {
+                    $txpcfg['cookie_domain'] = rtrim(substr($txpcfg['admin_url'], strpos($txpcfg['admin_url'], '.') + 1), '/');
+                } else {
+                    $txpcfg['cookie_domain'] = '';
+                }
             }
         }
 
