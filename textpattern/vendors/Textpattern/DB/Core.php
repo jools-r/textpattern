@@ -141,7 +141,7 @@ class Core
 
     public function getPrefsDefault()
     {
-        global $permlink_mode, $siteurl, $theme_name, $pref, $language;
+        global $permlink_mode, $siteurl, $theme_name, $pref, $language, $txpcfg;
 
         $out = @json_decode(file_get_contents($this->data_dir.DS.'core.prefs'), true);
 
@@ -167,10 +167,16 @@ class Core
         $language = \Txp::get('\Textpattern\L10n\Locale')->validLocale($language);
 
         $path_to_public_site = (isset($txpcfg['multisite_root_path'])) ? $txpcfg['multisite_root_path'].DS.'public' : dirname(txpath);
+        if (isset($txpcfg['multisite_admin_path'])) {
+            $path_to_admin_site = $txpcfg['multisite_admin_path'];
+        } else {
+            $path_to_admin_site = (isset($txpcfg['multisite_root_path'])) ? $txpcfg['multisite_root_path'].DS.'admin' : txpath;
+        }
 
         $pf = array();
         $pf['file_base_path']  = $path_to_public_site.DS.'files';
         $pf['path_to_site']    = $path_to_public_site;
+        $pf['path_to_admin']   = $path_to_admin_site;
         $pf['tempdir']         = find_temp_dir();
         $pf['siteurl']         = $siteurl;
         $pf['theme_name']      = empty($theme_name) ? 'hive' : $theme_name;
