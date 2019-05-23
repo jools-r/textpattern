@@ -166,7 +166,12 @@ class Core
 
         $language = \Txp::get('\Textpattern\L10n\Locale')->validLocale($language);
 
-        $path_to_public_site = (isset($txpcfg['multisite_root_path'])) ? $txpcfg['multisite_root_path'].DS.'public' : dirname(txpath);
+        if (isset($txpcfg['multisite_public_path'])) {
+            $path_to_public_site = $txpcfg['multisite_public_path'];
+        } else {
+            $path_to_public_site = (isset($txpcfg['multisite_root_path'])) ? $txpcfg['multisite_root_path'].DS.'public' : dirname(txpath);
+        }
+
         if (isset($txpcfg['multisite_admin_path'])) {
             $path_to_admin_site = $txpcfg['multisite_admin_path'];
         } else {
