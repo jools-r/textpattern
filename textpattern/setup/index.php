@@ -344,7 +344,7 @@ function step_getDbInfo()
             ).
             inputLabel(
                 'setup_cookie_domain',
-                fInput('text', 'cookiedomain', @$cfg['site']['cookie_domain'], '', '', '', INPUT_REGULAR, '', 'setup_cookie_domain', '', true),
+                fInput('text', 'cookiedomain', @$cfg['site']['cookie_domain'], '', '', '', INPUT_REGULAR, '', 'setup_cookie_domain'),
                 'multisite_cookie_domain', 'setup_cookie_domain', array('class' => 'txp-form-field')
             );
     }
