@@ -109,17 +109,40 @@ if (defined('is_multisite')) {
 
 $protocol = (empty($_SERVER['HTTPS']) || @$_SERVER['HTTPS'] == 'off') ? 'http://' : 'https://';
 if (defined('is_multisite')) {
+    // Multisite: if setup path is subdir/setup/index.php, it is unlikely to be a subdomain.
+    $setup_url_parts = explode("/", $_SERVER['SCRIPT_NAME']);
+    $uses_subdir = ($setup_url_parts[1] != 'setup') ? true : false;
+    if($uses_subdir) {
+        $cfg['site']['admin_subdir'] = $setup_url_parts[1];
+    }
     if (empty($cfg['site']['admin_url'])) {
+        // Multisite: get admin url from current browser url.
         $cfg['site']['admin_url'] = $protocol.
         (@$_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'];
+        // If using a subdirectory, add to admin url.
+        if($uses_subdir) {
+            $cfg['site']['admin_url'] = $cfg['site']['admin_url'].DS.$cfg['site']['admin_subdir'];
+        }
     }
     if (empty($cfg['site']['cookie_domain'])) {
-        $cfg['site']['cookie_domain'] = substr($cfg['site']['admin_url'], strpos($cfg['site']['admin_url'], '.') + 1);
+        // Multisite: if subdomain, get domain from current browser setup url for cookie domain, otherwise skip. 
+        if($uses_subdir) {
+            $cfg['site']['cookie_domain'] = '';
+        } else {
+            $cfg['site']['cookie_domain'] = substr($cfg['site']['admin_url'], strpos($cfg['site']['admin_url'], '.') + 1);
+        }
     }
     if (empty($cfg['site']['public_url'])) {
-        $cfg['site']['public_url'] = $protocol.'www.'.$cfg['site']['cookie_domain'];
+        // Multisite: for subdomains, guess 'www' public url from cookie domain, else use base from browser setup url.
+        if($uses_subdir) {
+            $cfg['site']['public_url'] = $protocol.
+            (@$_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'];
+        } else {
+            $cfg['site']['public_url'] = $protocol.'www.'.$cfg['site']['cookie_domain'];
+        }
     }
 }
+// Regular non-multisite public url.
 if (empty($cfg['site']['public_url'])) {
     if (@$_SERVER['SCRIPT_NAME'] && (@$_SERVER['SERVER_NAME'] || @$_SERVER['HTTP_HOST'])) {
         $cfg['site']['public_url'] = $protocol.
@@ -315,6 +338,11 @@ function step_getDbInfo()
                 'multisite_admin_domain', 'setup_admin_url', array('class' => 'txp-form-field')
             ).
             inputLabel(
+                'setup_public_url',
+                fInput('text', 'publicurl', @$cfg['site']['public_url'], '', '', '', INPUT_REGULAR, '', 'setup_public_url', '', true),
+                'multisite_public_domain', 'setup_public_url', array('class' => 'txp-form-field')
+            ).
+            inputLabel(
                 'setup_cookie_domain',
                 fInput('text', 'cookiedomain', @$cfg['site']['cookie_domain'], '', '', '', INPUT_REGULAR, '', 'setup_cookie_domain', '', true),
                 'multisite_cookie_domain', 'setup_cookie_domain', array('class' => 'txp-form-field')
@@ -351,6 +379,7 @@ function step_printConfig()
 
     if (defined('is_multisite')) {
         $cfg['site']['admin_url'] = ps('adminurl');
+        $cfg['site']['public_url'] = ps('publicurl');
         $cfg['site']['cookie_domain'] = ps('cookiedomain');
     }
 

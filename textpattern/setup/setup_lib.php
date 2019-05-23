@@ -276,6 +276,16 @@ function setup_makeConfig($cfg, $doSpecial = false)
     if ($doSpecial) {
         $cfg['database'] = doSpecial($cfg['database']);
     }
+    
+    if (defined('is_multisite')) {
+        if (!empty($cfg['site']['admin_subdir'])) {
+            $multisite_public_path = multisite_root_path;
+            $multisite_admin_path  = multisite_root_path.'/'.$cfg['site']['admin_subdir'];
+        } else {
+            $multisite_public_path = multisite_root_path.'/public';
+            $multisite_admin_path  = multisite_root_path.'/admin';
+        }
+    }
 
     $config_details =
     "<"."?php\n"
@@ -291,8 +301,10 @@ function setup_makeConfig($cfg, $doSpecial = false)
     if (defined('is_multisite')) {
         $config_details .=
              o.'multisite_root_path'.m.multisite_root_path.nl
-            .o.'admin_url'.m.$cfg['site']['admin_url'].nl
-            .o.'cookie_domain'.m.$cfg['site']['cookie_domain'].nl
+            .o.'multisite_public_path'.m.$multisite_public_path.nl
+            .o.'multisite_admin_path'.m.$multisite_admin_path.nl
+            .(empty($cfg['site']['admin_subdir']) || $cfg['site']['admin_subdir'] != 'textpattern' ? o.'admin_url'.m.$cfg['site']['admin_url'].nl : '' )
+            .(!empty($cfg['site']['cookie_domain']) ? o.'cookie_domain'.m.$cfg['site']['cookie_domain'].nl : '' )
             .'if (!defined(\'txpath\')) { define(\'txpath\', $txpcfg[\'txpath\']); }'."\n";
     }
 
