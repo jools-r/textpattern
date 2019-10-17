@@ -1091,7 +1091,7 @@ function gps($thing, $default = '')
     } elseif (isset($_POST[$thing])) {
         $out = $_POST[$thing];
     } else {
-        $out = $default;
+        return $default;
     }
 
     $out = doArray($out, 'deNull');
@@ -3377,28 +3377,32 @@ function get_uploaded_file($f, $dest = '')
  *
  * Used for importing existing files on the server to Textpattern's files panel.
  *
+ * @param   string $path    The directory to scan
+ * @param   int    $options glob() options
  * @return  array An array of file paths
  * @package File
  */
 
-function get_filenames()
+function get_filenames($path = null, $options = GLOB_NOSORT)
 {
     global $file_base_path;
 
     $files = array();
+    $file_path = isset($path) ? $path : $file_base_path;
+    $is_file = empty($options & GLOB_ONLYDIR) ? 'is_file' : 'is_dir';
 
-    if (!is_dir($file_base_path) || !is_readable($file_base_path)) {
+    if (!is_dir($file_path) || !is_readable($file_path)) {
         return array();
     }
 
     $cwd = getcwd();
 
-    if (chdir($file_base_path)) {
-        $directory = glob('*', GLOB_NOSORT);
+    if (chdir($file_path)) {
+        $directory = glob('*', $options);
 
         if ($directory) {
             foreach ($directory as $filename) {
-                if (is_file($filename) && is_readable($filename)) {
+                if ($is_file($filename) && is_readable($filename)) {
                     $files[$filename] = $filename;
                 }
             }
@@ -3411,8 +3415,8 @@ function get_filenames()
         }
     }
 
-    if (!$files) {
-        return array();
+    if (!$files || isset($path)) {
+        return $files;
     }
 
     $rs = safe_rows_start("filename", 'txp_file', "1 = 1");
@@ -4173,18 +4177,20 @@ function txp_validate($user, $password, $log = true)
     }
 
     // Check post-4.3-style passwords.
-    if (Txp::get('\Textpattern\Password\Hash')->verify($password, $r['pass'])) {
+    if ($pass = Txp::get('\Textpattern\Password\Hash')->verify($password, $r['pass'])) {
         if (!$log || $r['privs'] > 0) {
             $name = $r['name'];
         }
+
+        if ($pass === true) {
+            safe_update('txp_users', "pass = '".doSlash(Txp::get('\Textpattern\Password\Hash')->hash($password))."'", "name = '$safe_user'");
+        }
     } else {
         // No good password: check 4.3-style passwords.
-        $passwords = array();
-        $passwords[] = "PASSWORD(LOWER('".doSlash($password)."'))";
-        $passwords[] = "PASSWORD('".doSlash($password)."')";
+        $pass = '*'.sha1(sha1($password, true));
 
         $name = safe_field("name", 'txp_users',
-            "name = '$safe_user' AND (pass = ".join(" OR pass = ", $passwords).") AND privs > 0");
+            "name = '$safe_user' AND privs > 0 AND (pass = UPPER('$pass') OR pass = LOWER('$pass'))");
 
         // Old password is good: migrate password to phpass.
         if ($name !== false) {
@@ -4574,24 +4580,20 @@ function fetch_page($name, $theme)
 
 function parse_page($name, $theme, $page = '')
 {
-    global $prefs, $pretext, $trace;
+    global $pretext, $trace;
 
     if (!$page) {
         $page = fetch_page($name, $theme);
     }
 
-    $php_allowed = $prefs['allow_page_php_scripting'];
-
     if ($page !== false) {
         while ($pretext['secondpass'] <= get_pref('secondpass', 1) && preg_match('@<(?:'.TXP_PATTERN.'):@', $page)) {
             $page = parse($page);
-            $prefs['allow_page_php_scripting'] = false;
+            // the function so nice, he ran it twice
             $pretext['secondpass']++;
             $trace->log('[ ~~~ secondpass ('.$pretext['secondpass'].') ~~~ ]');
         }
     }
-
-    $prefs['allow_page_php_scripting'] = $php_allowed;
 
     return $page;
 }
@@ -5652,6 +5654,13 @@ function pagelinkurl($parts, $inherit = array())
             }
             $url = hu.urlencode($keys['s']).'/';
             unset($keys['s']);
+            if (!empty($keys['c']) && ($permlink_mode == 'section_category_title' || $permlink_mode == 'breadcrumb_title')) {
+                $catpath = $permlink_mode == 'breadcrumb_title' ?
+                    array_column(getRootPath($keys['c'], empty($keys['context']) ? 'article' : $keys['context']), 'name') :
+                    array($keys['c']);
+                $url .= implode('/', array_map('urlencode', array_reverse($catpath))).'/';
+                unset($keys['c']);
+            }
         } elseif (!empty($keys['month']) && $permlink_mode == 'year_month_day_title') {
             if (!empty($keys['context'])) {
                 $keys['context'] = gTxt($keys['context'].'_context');
@@ -5663,6 +5672,7 @@ function pagelinkurl($parts, $inherit = array())
             $url = hu.strtolower(urlencode(gTxt('author'))).'/'.$ct.urlencode($keys['author']).'/';
             unset($keys['author'], $keys['context']);
         } elseif (!empty($keys['c'])) {
+            $catpath = array_column(getRootPath($keys['c'], empty($keys['context']) ? 'article' : $keys['context']), 'name');
             $ct = empty($keys['context']) ? '' : strtolower(urlencode(gTxt($keys['context'].'_context'))).'/';
             $url = hu.strtolower(urlencode(gTxt('category'))).'/'.$ct.urlencode($keys['c']).'/';
             unset($keys['c'], $keys['context']);
@@ -5701,7 +5711,7 @@ function permlinkurl_id($id)
     }
 
     $rs = safe_row(
-        "ID AS thisid, Section AS section, Title AS title, url_title, UNIX_TIMESTAMP(Posted) AS posted, UNIX_TIMESTAMP(Expires) AS expires",
+        "ID AS thisid, Section, Title, url_title, Category1, Category2, UNIX_TIMESTAMP(Posted) AS posted, UNIX_TIMESTAMP(Expires) AS expires",
         'textpattern',
         "ID = $id"
     );
@@ -5743,6 +5753,8 @@ function permlinkurl($article_array)
         'title'     => null,
         'url_title' => null,
         'section'   => null,
+        'category1' => null,
+        'category2' => null,
         'posted'    => null,
         'uposted'   => null,
         'expires'   => null,
@@ -5800,8 +5812,34 @@ function permlinkurl($article_array)
         case 'section_title':
             $out = hu."$section/$url_title";
             break;
+        case 'section_category_title':
+        case 'breadcrumb_title':
+            $breadcrumb = ($permlink_mode == 'breadcrumb_title');
+            $out = hu.$section.'/';
+            if (empty($category1)) {
+                if (!empty($category2)) {
+                    $out .= ($breadcrumb ? implode('/', array_reverse(array_column(getRootPath($category2), 'name'))) : $category2).'/';
+                }
+            } elseif (empty($category2)) {
+                $out .= ($breadcrumb ? implode('/', array_reverse(array_column(getRootPath($category1), 'name'))) : $category1).'/';
+            } else {
+                $c2_path = array_reverse(array_column(getRootPath($category2), 'name'));
+                if (in_array($category1, $c2_path)) {
+                    $out .= ($breadcrumb ? implode('/', $c2_path) : "$category1/$category2").'/';
+                } else {
+                    $c1_path = array_reverse(array_column(getRootPath($category1), 'name'));
+                    if (in_array($category2, $c1_path)) {
+                        $out .= ($breadcrumb ? implode('/', $c1_path) : "$category2/$category1").'/';
+                    } else {
+                        $c0_path = $breadcrumb ? array_intersect($c1_path, $c2_path) : null;
+                        $out .= ($c0_path ? implode('/', $c0_path).'/' : '')."$category1+$category2/";
+                    }
+                }
+            }
+            $out .= $url_title;
+            break;
         case 'title_only':
-            $out = hu."$url_title";
+            $out = hu.$url_title;
             break;
         case 'messy':
             $out = hu."index.php?id=$thisid";
@@ -5897,7 +5935,26 @@ function in_list($val, $list, $delim = ',')
 
 function do_list($list, $delim = ',')
 {
-    return array_map('trim', explode($delim, $list));
+    if (is_array($delim)) {
+        list($delim, $range) = $delim + array(null, null);
+    }
+
+    $list = explode($delim, $list);
+
+    if (isset($range)) {
+        $out = array();
+
+        foreach($list as $item) {
+            if (strpos($item, $range) === false) {
+                $out[] = trim($item);
+            } else {
+                list($start, $end) = explode($range, $item, 2);
+                $out = array_merge($out, range(trim($start), trim($end)));
+            }
+        }
+    }
+
+    return isset($out) ? $out : array_map('trim', $list);
 }
 
 /**
@@ -5917,7 +5974,7 @@ function do_list($list, $delim = ',')
 
 function do_list_unique($list, $delim = ',', $flags = TEXTPATTERN_STRIP_EMPTY_STRING)
 {
-    $out = array_unique(array_map('trim', explode($delim, $list)));
+    $out = array_unique(do_list($list, $delim));
 
     if ($flags & TEXTPATTERN_STRIP_EMPTY) {
         $out = array_filter($out);
