@@ -612,7 +612,7 @@ function plugin_upload()
                         }
                     }
 
-                    $zip->extractTo(txpath.DS.'plugins'.(empty($makedir) ? '' : DS.$filename));
+                    $zip->extractTo($path_to_admin.DS.'plugins'.(empty($makedir) ? '' : DS.$filename));
                     $zip->close();
                     $plugin = Txp::get('\Textpattern\Plugin\Plugin')->read($filename);
                 }
