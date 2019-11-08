@@ -164,7 +164,7 @@ function plugin_list($message = '')
         );
 
     $contentBlock = '';
-    $existing_files = get_filenames(txpath.DS.'plugins'.DS, GLOB_ONLYDIR) or $existing_files = array();
+    $existing_files = get_filenames($path_to_admin.DS.'plugins'.DS, GLOB_ONLYDIR) or $existing_files = array();
 
     $paginator = new \Textpattern\Admin\Paginator($event, 'plugin');
     $limit = $paginator->getLimit();

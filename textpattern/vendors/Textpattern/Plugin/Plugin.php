@@ -416,7 +416,7 @@ class Plugin
             }
 
             \Txp::get('\Textpattern\L10n\Lang')->upsertPack($langpack, $name);
-            $langDir = txpath.DS.'plugins'.DS.$name.DS.'lang'.DS;
+            $langDir = $path_to_admin.DS.'plugins'.DS.$name.DS.'lang'.DS;
 
             if (is_dir($langDir) && is_readable($langDir)) {
                 $plugLang = new \Textpattern\L10n\Lang($langDir);
