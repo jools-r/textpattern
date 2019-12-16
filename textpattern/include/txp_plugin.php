@@ -671,7 +671,7 @@ function plugin_form($existing_files = array())
             'action'       => 'index.php',
             'enctype'      => 'multipart/form-data'
         )
-    ).
+    ).br.
     ($existing_files ? form(
         eInput('plugin').
         sInput('plugin_load').
