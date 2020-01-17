@@ -679,6 +679,8 @@ function preText($s, $prefs)
                 empty($rs['dev_page']) or $rs['page'] = $rs['dev_page'];
                 empty($rs['dev_css']) or $rs['css'] = $rs['dev_css'];
             }
+
+            unset($rs);
         }
 
         $s = empty($out['s']) || $is_404 || !isset($txp_sections[$out['s']]) ? 'default' : $out['s'];
@@ -938,9 +940,7 @@ function doArticles($atts, $iscustom, $thing = null)
 
     // Give control to search, if necessary.
     if ($q && !$issticky) {
-        include_once txpath.'/publish/search.php';
-
-        $s_filter = ($searchall ? filterSearch() : '');
+        $s_filter = ($searchall ? filterFrontPage('Section', 'searchable') : '');
         $q = trim($q);
         $quoted = ($q[0] === '"') && ($q[strlen($q) - 1] === '"');
         $q = doSlash($quoted ? trim(trim($q, '"')) : $q);
