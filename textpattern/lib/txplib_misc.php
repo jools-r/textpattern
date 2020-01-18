@@ -3338,23 +3338,17 @@ function fetch_section_title($name)
         return $sectitles[$name];
     }
 
-    // Try global set by section_list().
-    if (!empty($thissection['title']) && $thissection['name'] == $name) {
-        $sectitles[$name] = $thissection['title'];
-
+    if (!empty($thissection) && $thissection['name'] == $name) {
         return $thissection['title'];
-    }
-
-    if ($name == 'default' or empty($name)) {
+    } elseif ($name == 'default' or empty($name)) {
         return '';
     } elseif (isset($txp_sections[$name])) {
-        return $txp_sections[$name]['title'];
+        return $sectitles[$name] = $txp_sections[$name]['title'];
     }
 
     $f = safe_field("title", 'txp_section', "name = '".doSlash($name)."'");
-    $sectitles[$name] = $f;
 
-    return $f;
+    return $sectitles[$name] = $f;
 }
 
 /**
@@ -5035,16 +5029,18 @@ function get_context($context = true, $internals = array('s', 'c', 'context', 'q
     } elseif (empty($context)) {
         return array();
     } elseif (!is_array($context)) {
-        $context = $context === true ? $internals : do_list_unique($context);
+        $context = array_fill_keys($context === true ? $internals : do_list_unique($context), null);
     }
 
     $out = array();
 
-    foreach ($context as $q) {
-        if (!empty($pretext[$q]) && in_array($q, $internals)) {
+    foreach ($context as $q => $v) {
+        if (isset($pretext[$q]) && in_array($q, $internals)) {
             $out[$q] = $q === 'author' ? $pretext['realname'] : $pretext[$q];
-        } elseif (!isset($pretext[$q]) && $value = gps($q)) {
-            $out[$q] = $value;
+        } elseif (isset($v)) {
+            $out[$q] = $v;
+        } elseif (($v = gps($q, false)) !== false) {
+            $out[$q] = $v;
         }
     }
 
