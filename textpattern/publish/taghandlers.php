@@ -3867,12 +3867,21 @@ function permlink($atts, $thing = null)
         'context' => null,
     );
 
-    if (!empty($atts['context']) && $atts['context'] !== true) {
+    $old_context = $txp_context;
+
+    if (!isset($atts['context'])) {
+        if (empty($txp_context)) {
+            $atts = lAtts($lAtts, $atts);
+        } else {
+            $atts = lAtts($lAtts + $txp_context, $atts);
+            $txp_context = array_intersect_key($atts, $txp_context);
+        }
+    } elseif ($atts['context'] === true) {
+        $atts = lAtts($lAtts, $atts);
+    } else {
         $extralAtts = array_fill_keys(do_list_unique($atts['context']), null);
         $atts = lAtts($lAtts + $extralAtts, $atts);
         $extralAtts = array_intersect_key($atts, $extralAtts);
-    } else {
-        $atts = lAtts($lAtts, $atts);
     }
 
     $id = $atts['id'];
@@ -3881,9 +3890,7 @@ function permlink($atts, $thing = null)
         assert_article();
     }
 
-    $thisid = $id ? $id : $thisarticle['thisid'];
-    $old_context = $txp_context;
-    $txp_context = isset($extralAtts) ? get_context($extralAtts) : get_context($atts['context']);
+    $txp_context = get_context(isset($extralAtts) ? $extralAtts : $atts['context']);
     $url = $id ? permlinkurl_id($id) : permlinkurl($thisarticle);
     $txp_context = $old_context;
 
@@ -4424,7 +4431,13 @@ function if_status($atts, $thing = null)
 function page_url($atts, $thing = null)
 {
     global $pretext, $txp_context;
-    static $specials = null, $internals = array('id', 's', 'c', 'context', 'q', 'm', 'p', 'month', 'author', 'f');
+    static $specials = null, $internals = array('id', 's', 'c', 'context', 'q', 'm', 'p', 'month', 'author', 'f'),
+        $lAtts = array(
+            'type'    => null,
+            'default' => false,
+            'escape'  => null,
+            'context' => null
+        );
 
     isset($specials) or $specials = array(
         'admin_root'  => ahu,
@@ -4434,15 +4447,26 @@ function page_url($atts, $thing = null)
         'theme'       => $pretext['skin'],
     );
 
-    extract(lAtts(array(
-        'type'    => null,
-        'default' => false,
-        'escape'  => null,
-        'context' => null
-    ), $atts));
-
     $old_context = $txp_context;
-    $txp_context = get_context($context, $internals);
+
+    if (!isset($atts['context'])) {
+        if (empty($txp_context)) {
+            $atts = lAtts($lAtts, $atts);
+        } else {
+            $atts = lAtts($lAtts + $txp_context, $atts);
+            $txp_context = array_intersect_key($atts, $txp_context);
+        }
+    } elseif ($atts['context'] === true) {
+        $atts = lAtts($lAtts, $atts);
+    } else {
+        $extralAtts = array_fill_keys(do_list_unique($atts['context']), null);
+        $atts = lAtts($lAtts + $extralAtts, $atts);
+        $extralAtts = array_intersect_key($atts, $extralAtts);
+    }
+
+    extract($atts, EXTR_SKIP);
+
+    $txp_context = get_context(isset($extralAtts) ? $extralAtts : $context, $internals);
 
     if ($default !== false) {
         if ($default === true) {
