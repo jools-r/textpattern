@@ -196,7 +196,7 @@ Txp::get('\Textpattern\Tag\Registry')
     ->registerAttr(false, 'class, html_id, labeltag')
     ->registerAttr(true, 'not, txp-process, breakby, breakclass, wrapform, evaluate')
     ->registerAttr('txp_escape', 'escape')
-    ->registerAttr('txp_wraptag', 'wraptag, label, trim, default');
+    ->registerAttr('txp_wraptag', 'wraptag, label, trim, replace, default');
 
 // -------------------------------------------------------------
 
@@ -1684,10 +1684,10 @@ function link_to($atts, $thing = null, $target = 'next')
             $url = permlink(array_diff_key($atts, $lAtts));
 
             if ($form || $thing !== null) {
-                populateArticleData($thisarticle[$target]);
+                populateArticleData($thisarticle);
                 $thisarticle['is_first'] = $thisarticle['is_last'] = true;
                 $thing = $form ? parse_form($form) : parse($thing);
-                $target_title = escape_title($thisarticle[$target]['Title']);
+                $target_title = escape_title($thisarticle['Title']);
 
                 $url = $link ? href(
                     $thing,
@@ -4298,6 +4298,7 @@ function custom_field($atts, $thing = null)
 function if_custom_field($atts, $thing = null)
 {
     global $thisarticle;
+    static $dlmPool = array('/', '@', '#', '~', '`', '|', '!', '%');
 
     assert_article();
 
@@ -4323,35 +4324,28 @@ function if_custom_field($atts, $thing = null)
                 $cond = ($thisarticle[$name] == $value);
                 break;
             case 'any':
-                $values = do_list($value);
+                $values = do_list_unique($value);
                 $cond = false;
-                $cf_contents = ($separator) ? do_list($thisarticle[$name], $separator) : $thisarticle[$name];
+                $cf_contents = $separator ? do_list_unique($thisarticle[$name], $separator) : $thisarticle[$name];
+
                 foreach ($values as $term) {
-                    if ($term == '') {
-                        continue;
-                    }
-
-                    $cond = is_array($cf_contents) ? in_array($term, $cf_contents) : ((strpos($cf_contents, $term) !== false) ? true : false);
-
-                    // Short circuit if a match is found.
-                    if ($cond) {
+                    if (is_array($cf_contents) ? in_array($term, $cf_contents) : strpos($cf_contents, $term) !== false) {
+                        $cond = true;
                         break;
                     }
                 }
                 break;
             case 'all':
-                $values = do_list($value);
-                $num_values = count($values);
-                $term_count = 0;
-                $cf_contents = ($separator) ? do_list($thisarticle[$name], $separator) : $thisarticle[$name];
-                foreach ($values as $term) {
-                    if ($term == '') {
-                        continue;
-                    }
+                $values = do_list_unique($value);
+                $cond = true;
+                $cf_contents = $separator ? do_list_unique($thisarticle[$name], $separator) : $thisarticle[$name];
 
-                    $term_count += is_array($cf_contents) ? in_array($term, $cf_contents) : ((strpos($cf_contents, $term) !== false) ? true : false);
+                foreach ($values as $term) {
+                    if (is_array($cf_contents) ? !in_array($term, $cf_contents) : strpos($cf_contents, $term) === false) {
+                        $cond = false;
+                        break;
+                    }
                 }
-                $cond = ($term_count == $num_values) ? true : false;
                 break;
             case 'pattern':
                 // Cannot guarantee that a fixed delimiter won't break preg_match
@@ -4361,9 +4355,16 @@ function if_custom_field($atts, $thing = null)
                 // of a TXP-initiated preg_match error, while still preserving
                 // errors outside TXP's control (e.g. mangled user-submitted
                 // PCRE pattern).
-                $dlmPool = array('/', '@', '#', '~', '`', '|', '!', '%');
-                $dlm = array_merge(array_diff($dlmPool, preg_split('//', $value, -1)));
-                $dlm = (count($dlm) > 0) ? $dlm[0].$value.$dlm[0] : $value;
+                if ($separator === true) {
+                    $dlm = $value;
+                } elseif ($separator && in_array($separator, $dlmPool)) {
+                    $dlm = strpos($value, $separator) === 0 ? $value : $separator.$value.$separator;
+                } else {
+                    $dlm = array_diff($dlmPool, preg_split('//', $value));
+                    $dlm = reset($dlm);
+                    $dlm = $dlm.$value.$dlm;
+                }
+
                 $cond = preg_match($dlm, $thisarticle[$name]);
                 break;
             default:
@@ -5328,19 +5329,20 @@ function txp_wraptag($atts, $thing = '')
         'wraptag'  => '',
         'class'    => '',
         'html_id'  => '',
-        'trim'     => '',
+        'trim'     => null,
+        'replace'  => null,
         'default'  => null,
     ), $atts, false));
 
     !isset($default) or trim($thing) !== '' or $thing = $default;
 
-    if ((string)$trim !== '') {
+    if (isset($trim)) {
         if ($trim === true) {
-            $thing = trim($thing);
-        } elseif (strlen($trim) > 2 && preg_match('/([^\\\w\s]).+\1[UsimuS]*$/As', $trim)) {
-            $thing = preg_replace($trim, '', $thing);
+            $thing = isset($replace) ? preg_replace('/\s+/', $replace, trim($thing)) : trim($thing);
+        } elseif (strlen($trim) > 2 && preg_match('/([^\\\w\s]).+\1[UsiAmuS]*$/As', $trim)) {
+            $thing = preg_replace($trim, $replace, $thing);
         } else {
-            $thing = trim($thing, $trim);
+            $thing = isset($replace) ? str_replace($trim, $replace, $thing) : trim($thing, $trim);
         }
     }
 
