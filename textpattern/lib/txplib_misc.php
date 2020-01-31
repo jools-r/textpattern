@@ -3111,7 +3111,7 @@ function EvalElse($thing, $condition)
  * to a 'form.fetch' callback event. Any value returned by the callback function
  * will be used as the form template markup.
  *
- * @param   string $name The form
+ * @param   array|string $name The form
  * @return  string
  * @package TagParser
  */
@@ -3123,28 +3123,43 @@ function fetch_form($name)
     static $forms = array();
     global $pretext;
 
-    $name = (string) $name;
     $skin = $pretext['skin'];
+    $fetch = is_array($name);
 
-    if (!isset($forms[$name])) {
+    if ($fetch || !isset($forms[$name])) {
+        $names = $fetch ? array_diff($name, array_keys($forms)) : array($name);
+
         if (has_handler('form.fetch')) {
-            $form = callback_event('form.fetch', '', false, compact('name', 'skin'));
+            foreach ($names as $form) {
+                $forms[$form] = callback_event('form.fetch', '', false, compact('form', 'skin'));
+            }
+        } elseif ($fetch) {
+            $nameset = implode(',', quote_list($names));
+
+            if ($nameset and $rs = safe_rows_start('name, Form', 'txp_form', "name IN (".$nameset.") AND skin = '".doSlash($skin)."'")) {
+                while ($row = nextRow($rs)) {
+                    $forms[$row['name']] = $row['Form'];
+                }
+            }
         } else {
-            $form = safe_field('Form', 'txp_form', "name = '".doSlash($name)."' AND skin = '".doSlash($skin)."'");
+            $forms[$name] = safe_field('Form', 'txp_form', "name ='".doSlash($name)."' AND skin = '".doSlash($skin)."'");
         }
 
-        if ($form === false) {
-            trigger_error(gTxt('form_not_found').' '.$name);
+        foreach ($names as $form) {
+            if (empty($forms[$form])) {
+                trigger_error(gTxt('form_not_found').' '.$form);
+                $forms[$form] = false;
+            }
+        }
+    }
+
+    if (!$fetch) {
+        if ($production_status === 'debug') {
+            $trace->log("[Form: '$skin.$name']");
         }
 
-        $forms[$name] = $form;
+        return $forms[$name];
     }
-
-    if ($production_status === 'debug') {
-        $trace->log("[Form: '$skin.$name']");
-    }
-
-    return $forms[$name];
 }
 
 /**
@@ -4501,7 +4516,7 @@ function permlinkurl_id($id)
 function permlinkurl($article_array, $hu = hu)
 {
     global $permlink_mode, $prefs, $permlinks, $production_status, $txp_sections;
-    static $internals = array('s', 'context', 'pg', 'p'), $now = null;
+    static $internals = array('id', 's', 'context', 'pg', 'p'), $now = null;
 
     if (isset($prefs['custom_url_func'])
         and is_callable($prefs['custom_url_func'])
@@ -5020,7 +5035,7 @@ function getMetaDescription($type = null)
  * @return array The retrieved data
  */
 
-function get_context($context = true, $internals = array('s', 'c', 'context', 'q', 'm', 'pg', 'p', 'month', 'author', 'f'))
+function get_context($context = true, $internals = array('id', 's', 'c', 'context', 'q', 'm', 'pg', 'p', 'month', 'author', 'f'))
 {
     global $pretext, $txp_context;
 
@@ -5625,6 +5640,80 @@ function real_max_upload_size($user_max, $php = true)
 
     // 2^53 - 1 is max safe JavaScript integer, let 8192Tb
     return number_format(min($real_max, pow(2, 53) - 1), 0, '.', '');
+}
+
+// -------------------------------------------------------------
+
+function txp_match($atts, $what)
+{
+    static $dlmPool = array('/', '@', '#', '~', '`', '|', '!', '%');
+
+    extract($atts + array(
+        'value'     => null,
+        'match'     => 'exact',
+        'separator' => '',
+    ));
+
+
+    if ($value !== null) {
+        switch ($match) {
+            case '':
+            case 'exact':
+                $cond = (is_array($what) ? implode('', $what) == $value : $what == $value);
+                break;
+            case 'any':
+                $values = do_list_unique($value);
+                $cond = false;
+                $cf_contents = $separator && !is_array($what) ? do_list_unique($what, $separator) : $what;
+
+                foreach ($values as $term) {
+                    if (is_array($cf_contents) ? in_array($term, $cf_contents) : strpos($cf_contents, $term) !== false) {
+                        $cond = true;
+                        break;
+                    }
+                }
+                break;
+            case 'all':
+                $values = do_list_unique($value);
+                $cond = true;
+                $cf_contents = $separator && !is_array($what) ? do_list_unique($what, $separator) : $what;
+
+                foreach ($values as $term) {
+                    if (is_array($cf_contents) ? !in_array($term, $cf_contents) : strpos($cf_contents, $term) === false) {
+                        $cond = false;
+                        break;
+                    }
+                }
+                break;
+            case 'pattern':
+                // Cannot guarantee that a fixed delimiter won't break preg_match
+                // (and preg_quote doesn't help) so dynamically assign the delimiter
+                // based on the first entry in $dlmPool that is NOT in the value
+                // attribute. This minimises (does not eliminate) the possibility
+                // of a TXP-initiated preg_match error, while still preserving
+                // errors outside TXP's control (e.g. mangled user-submitted
+                // PCRE pattern).
+                if ($separator === true) {
+                    $dlm = $value;
+                } elseif ($separator && in_array($separator, $dlmPool)) {
+                    $dlm = strpos($value, $separator) === 0 ? $value : $separator.$value.$separator;
+                } else {
+                    $dlm = array_diff($dlmPool, preg_split('//', $value));
+                    $dlm = reset($dlm);
+                    $dlm = $dlm.$value.$dlm;
+                }
+
+                $cond = preg_match($dlm, is_array($what) ? implode('', $what) : $what);
+                break;
+            default:
+                trigger_error(gTxt('invalid_attribute_value', array('{name}' => 'match')), E_USER_NOTICE);
+                $cond = false;
+        }
+    } else {
+        $cond = ($what !== null);
+    }
+
+    return !empty($cond);
 }
 
 /*** Polyfills ***/

@@ -66,8 +66,9 @@ Txp::get('\Textpattern\Tag\Registry')
     ->register('site_name')
     ->register('site_slogan')
     ->register('link_to_home')
-    ->register('txp_pager', 'newer')
+    ->register('txp_pager', 'newer', true)
     ->register('txp_pager', 'older', false)
+    ->register('txp_pager', 'pages')
     ->register('text')
     ->register('article_id')
     ->register('article_url_title')
@@ -148,6 +149,7 @@ Txp::get('\Textpattern\Tag\Registry')
     ->register('if_first_section')
     ->register('if_last_section')
     ->register('if_logged_in')
+    ->register('if_request')
     ->register('php')
     ->register('txp_header', 'header')
     ->register('custom_field')
@@ -504,6 +506,10 @@ function output_form($atts, $thing = null)
     $form = $atts['form'];
     $to_yield = isset($atts['yield']) ? $atts['yield'] : false;
     unset($atts['form'], $atts['yield'], $txp_atts['form'], $txp_atts['yield']);
+
+    if ($form === true && empty($atts)) {
+        return fetch_form(do_list_unique($to_yield));
+    }
 
     if (!empty($to_yield)) {
         $to_yield = $to_yield === true ? $atts : array_fill_keys(do_list_unique($to_yield), null);
@@ -1788,76 +1794,140 @@ function link_to_home($atts, $thing = null)
 
 // -------------------------------------------------------------
 
-function txp_pager($atts, $thing = null, $newer = true)
+function txp_pager($atts, $thing = null, $newer = null)
 {
     global $thispage, $is_article_list, $txp_context, $txp_item;
-    static $shown = array();
+    static $pg = true, $numPages = null, $shown = array();
+    static $items = array('page' => null, 'total' => null, 'url' => null);
 
-    if (empty($thispage) || empty($thispage['numPages'])) {
-        return $is_article_list ? postpone_process() : '';
-    }
+    $get = isset($atts['total']) && $atts['total'] === true;
+    $set = $newer === null && (isset($atts['pg']) || isset($atts['total']) && !$get);
+    $oldPages = $numPages;
+    $oldpg = $pg;
 
     extract(lAtts(array(
-        'showalways' => 0,
+        'showalways' => false,
         'title'      => '',
-        'link'       => true,
+        'link'       => false,
         'escape'     => 'html',
         'rel'        => '',
-        'shift'      => null,
-        'break'      => '',
-    ), $atts));
+        'shift'      => false,
+        'break'      => '',) + 
+        ($set ? array(
+        'pg'         => $pg
+        ) : array()) + 
+        ($set || $get ? array(
+        'total'      => $numPages,
+        ) : array()), $atts));
 
-    $numPages = $thispage['numPages'];
-    $pg = $thispage['pg'];
-    $oldpage = isset($txp_item['page']) ? $txp_item['page'] : null;
+    if ($pg === true) {
+        $numPages = isset($thispage['numPages']) ? $thispage['numPages'] : null;
+    }
+
+    if (isset($total) && $total !== true) {
+        $numPages = (int)$total;
+    } elseif (!isset($numPages)) {
+        if (isset($thispage['numPages'])) {
+            $numPages = $thispage['numPages'];
+        } else {
+            return $is_article_list ? postpone_process() : '';
+        }
+    }
+
+    if ($set) {
+        $oldshown = $shown;
+        $shown = array();
+
+        if ($thing !== null) {
+            $thing = parse($thing);
+            $numPages = $oldPages;
+            $pg = $oldpg;
+            $shown = $oldshown;
+        }
+
+        return $thing;
+    }
+
+    $pgc = $pg === true ? 'pg' : $pg;
+    $thepg = $pg === true && isset($thispage['pg']) ? $thispage['pg'] : intval(gps($pgc, 1));
+    $thepg = max(1, min($thepg, $numPages));
+
+    if ($get) {
+        if ($thing === null && $shift === false) {
+            return $newer === null ? $numPages : ($newer ? $thepg - 1 : $numPages - $thepg);
+        } elseif ($shift === true || $shift === false) {
+            $shift = $newer === null ? false : ($newer ? $thepg.'-1' : '1-'.($numPages - $thepg + 1));
+        } else {
+            $range = (int)$shift;
+        }
+    }
+
+    foreach ($items as $item => $val) {
+        $items[$item] = isset($txp_item[$item]) ? $txp_item[$item] : null;
+        $txp_item[$item] = null;
+    }
+
+    $txp_item['total'] = $numPages;
     $old_context = $txp_context;
     $txp_context += get_context();
     $out = array();
-
-    if (!isset($shift)) {
-        $pages = array(1);
+    
+    if (isset($range)) {
+        $pages = $newer === null ? range(-max($range, 2*$range + $thepg - $numPages), max($range, 2*$range - $thepg + 1)) :
+        range($newer ? max($range, 2*$range + $thepg - $numPages) : 1, $newer ? 1 : max($range, 2*$range - $thepg + 1));
+    } elseif ($shift === false) {
+        $pages = $newer === null ? range(1 - $thepg, $numPages - $thepg) : array(1);
     } elseif ($shift === true) {
-        $pages = array(-1);
+        $pages = array(true);
     } else {
-        $pages = array_map('intval', do_list($shift));
+        $pages = array_map('intval', do_list($shift, array(',', '-')));
     }
 
     foreach ($pages as $page) {
-        if ($newer) {
-            $nextpg = (int)$page < 0 ? min(-$page, $pg - 1) : $pg - $page;
+        if ($newer === null) {
+            $nextpg = $thepg + $page;
+        } elseif ($newer) {
+            $nextpg = $page === true ? 1 : ((int)$page < 0 ? min(-$page, $thepg - 1) : $thepg - $page);
         } else {
-            $nextpg = (int)$page < 0 ? max($numPages + $page, $pg) + 1 : $pg + $page;
+            $nextpg = $page === true ? $numPages : ((int)$page < 0 ? max($numPages + $page, $thepg) + 1 : $thepg + $page);
         }
 
-        if (($newer && $nextpg >= 1 || !$newer && $nextpg <= $numPages) && ($showalways || empty($shown[$nextpg]))) {
-            $txp_item['page'] = $nextpg;
-            $shown[$nextpg] = true;
-            $url = pagelinkurl(array(
-                'pg' => $newer && ($nextpg == 1 && !isset($shift) || $shift === true) ? '' : $nextpg
-            ));
+        if ($nextpg >= 1 && $nextpg <= $numPages) {
+            if ($showalways || empty($shown[$nextpg])) {
+                $txp_context[$pgc] = $newer && ($nextpg == 1 && $shift === false || $shift === true) ? null : $nextpg;
+                $url = pagelinkurl($txp_context);
+                $txp_item['page'] = $nextpg;
+                $txp_item['url'] = $url;
+                $shown[$nextpg] = true;
 
-            if (isset($thing)) {
-                if ($escape == 'html') {
-                    $title = escape_title($title);
-                } elseif ($escape) {
-                    $title = txp_escape(array('escape' => $escape), $title);
+                if (isset($thing)) {
+                    if ($escape == 'html') {
+                        $title = escape_title($title);
+                    } elseif ($escape) {
+                        $title = txp_escape(array('escape' => $escape), $title);
+                    }
+
+                    $url = $link || $link === false && $nextpg != $thepg ? href(
+                        parse($thing),
+                        $url,
+                        (empty($title) ? '' : ' title="'.$title.'"').
+                        (empty($rel) ? '' : ' rel="'.txpspecialchars($rel).'"')
+                    ) : parse($thing);
                 }
-
-                $url = $link ? href(
-                    parse($thing),
-                    $url,
-                    (empty($title) ? '' : ' title="'.$title.'"').
-                    (empty($rel) ? '' : ' rel="'.txpspecialchars($rel).'"')
-                ) : parse($thing);
+            } else {
+                $url = false;
             }
         } else {
-            $url = $showalways ? parse($thing) : '';
+            $url = isset($thing) ? parse($thing, $shift === false) : false;
         }
 
         empty($url) or $out[] = $url;
     }
 
-    $txp_item['page'] = $oldpage;
+    foreach ($items as $item => $val) {
+        $txp_item[$item] = $val;
+    }
+
     $txp_context = $old_context;
 
     return doWrap($out, '', $break);
@@ -2169,7 +2239,7 @@ function comment_name_input($atts, $thing = null, $field = 'name', $clean = fals
     $val = is_callable($clean) ? $clean(pcs($field)) : pcs($field);
     $h5 = ($prefs['doctype'] == 'html5');
     $required = get_pref('comments_require_'.$field);
-    
+
     if (!empty($class)) {
         $class = ' '.txpspecialchars($class);
     }
@@ -2208,7 +2278,7 @@ function comment_message_input($atts)
     $n_message = 'message';
     $formnonce = '';
     $message = '';
-    
+
     if (!empty($class)) {
         $class = ' '.txpspecialchars($class);
     }
@@ -2252,7 +2322,7 @@ function comment_remember($atts)
         'rememberlabel' => $thiscommentsform['rememberlabel'],
         'forgetlabel'   => $thiscommentsform['forgetlabel']
     ), $atts));
-    
+
     if (!empty($class)) {
         $class = ' class="'.txpspecialchars($class).'"';
     }
@@ -2295,7 +2365,7 @@ function comment_preview($atts)
         'class' => '',
         'label' => $thiscommentsform['previewlabel']
     ), $atts));
-    
+
     if (!empty($class)) {
         $class = ' '.txpspecialchars($class);
     }
@@ -2313,7 +2383,7 @@ function comment_submit($atts)
         'class' => '',
         'label' => $thiscommentsform['submitlabel']
     ), $atts));
-    
+
     if (!empty($class)) {
         $class = ' '.txpspecialchars($class);
     }
@@ -4298,11 +4368,10 @@ function custom_field($atts, $thing = null)
 function if_custom_field($atts, $thing = null)
 {
     global $thisarticle;
-    static $dlmPool = array('/', '@', '#', '~', '`', '|', '!', '%');
 
     assert_article();
 
-    extract(lAtts(array(
+    extract($atts = lAtts(array(
         'name'      => get_pref('custom_1_set'),
         'value'     => null,
         'match'     => 'exact',
@@ -4318,59 +4387,7 @@ function if_custom_field($atts, $thing = null)
     }
 
     if ($value !== null) {
-        switch ($match) {
-            case '':
-            case 'exact':
-                $cond = ($thisarticle[$name] == $value);
-                break;
-            case 'any':
-                $values = do_list_unique($value);
-                $cond = false;
-                $cf_contents = $separator ? do_list_unique($thisarticle[$name], $separator) : $thisarticle[$name];
-
-                foreach ($values as $term) {
-                    if (is_array($cf_contents) ? in_array($term, $cf_contents) : strpos($cf_contents, $term) !== false) {
-                        $cond = true;
-                        break;
-                    }
-                }
-                break;
-            case 'all':
-                $values = do_list_unique($value);
-                $cond = true;
-                $cf_contents = $separator ? do_list_unique($thisarticle[$name], $separator) : $thisarticle[$name];
-
-                foreach ($values as $term) {
-                    if (is_array($cf_contents) ? !in_array($term, $cf_contents) : strpos($cf_contents, $term) === false) {
-                        $cond = false;
-                        break;
-                    }
-                }
-                break;
-            case 'pattern':
-                // Cannot guarantee that a fixed delimiter won't break preg_match
-                // (and preg_quote doesn't help) so dynamically assign the delimiter
-                // based on the first entry in $dlmPool that is NOT in the value
-                // attribute. This minimises (does not eliminate) the possibility
-                // of a TXP-initiated preg_match error, while still preserving
-                // errors outside TXP's control (e.g. mangled user-submitted
-                // PCRE pattern).
-                if ($separator === true) {
-                    $dlm = $value;
-                } elseif ($separator && in_array($separator, $dlmPool)) {
-                    $dlm = strpos($value, $separator) === 0 ? $value : $separator.$value.$separator;
-                } else {
-                    $dlm = array_diff($dlmPool, preg_split('//', $value));
-                    $dlm = reset($dlm);
-                    $dlm = $dlm.$value.$dlm;
-                }
-
-                $cond = preg_match($dlm, $thisarticle[$name]);
-                break;
-            default:
-                trigger_error(gTxt('invalid_attribute_value', array('{name}' => 'value')), E_USER_NOTICE);
-                $cond = false;
-        }
+        $cond = txp_match($atts, $thisarticle[$name]);
     } else {
         $cond = ($thisarticle[$name] !== '');
     }
@@ -4490,7 +4507,7 @@ function page_url($atts, $thing = null)
         $out = $specials[$type];
     } elseif ($type == 'pg' && $pretext['pg'] == '') {
         $out = '1';
-    } elseif (isset($pretext[$type])) {
+    } elseif (isset($pretext[$type]) && is_bool($default)) {
         $out = $escape === null ? txpspecialchars($pretext[$type]) : $pretext[$type];
     } else {
         $out = gps($type, $default);
@@ -5064,9 +5081,11 @@ function if_variable($atts, $thing = null)
 {
     global $variable;
 
-    extract(lAtts(array(
-        'name'  => '',
-        'value' => '',
+    extract($atts = lAtts(array(
+        'name'      => '',
+        'value'     => false,
+        'match'     => 'exact',
+        'separator' => '',
     ), $atts));
 
     if (empty($name)) {
@@ -5076,13 +5095,42 @@ function if_variable($atts, $thing = null)
     }
 
     if (isset($variable[$name])) {
-        if (!isset($atts['value'])) {
-            $x = true;
-        } else {
-            $x = $variable[$name] == $value;
-        }
+        $x = $value === false ? true : txp_match($atts, $variable[$name]);
     } else {
         $x = false;
+    }
+
+    return isset($thing) ? parse($thing, $x) : $x;
+}
+
+// -------------------------------------------------------------
+
+function if_request($atts, $thing = null)
+{
+    extract($atts = lAtts(array(
+        'name'      => '',
+        'type'      => 'request',
+        'value'     => null,
+        'match'     => 'exact',
+        'separator' => '',
+    ), $atts));
+
+    switch ($type = strtoupper($type)) {
+        case 'REQUEST':
+        case 'GET':
+        case 'POST':
+        case 'COOKIE':
+        case 'SERVER':
+            global ${'_'.$type};
+            $what = isset(${'_'.$type}[$name]) ? ${'_'.$type}[$name] : null;
+            $x = txp_match($atts, $what);
+            break;
+        case 'NAME':
+            $x = txp_match($atts, $name);
+            break;
+        default:
+            $x = false;
+            trigger_error(gTxt('invalid_attribute_value', array('{name}' => 'type')), E_USER_NOTICE);
     }
 
     return isset($thing) ? parse($thing, $x) : $x;
