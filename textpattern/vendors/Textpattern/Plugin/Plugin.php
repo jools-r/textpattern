@@ -500,12 +500,13 @@ class Plugin
 
     public function updateFile($name, $code = null)
     {
-        if (!is_writable(txpath.DS.'plugins')) {
+        $path_to_admin = get_pref('path_to_admin');
+
+        if (!is_writable($path_to_admin.DS.'plugins')) {
             return;
         }
 
         $filename = sanitizeForFile($name);
-        $path_to_admin = get_pref('path_to_admin');
 
         if (!isset($code)) {
             return \Txp::get('\Textpattern\Admin\Tools')->removeFiles($path_to_admin.DS.'plugins', $filename);

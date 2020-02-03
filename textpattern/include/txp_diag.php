@@ -248,8 +248,9 @@ function doDiagnostics()
         $notReadable[] = array('{dirtype}' => 'tempdir', '{path}' => $tempdir);
     }
 
-    if (!@is_writable(txpath.DS.'plugins')) {
-        $notReadable[] = array('{dirtype}' => 'plugin_dir', '{path}' => txpath.DS.'plugins');
+    $dir = (isset($path_to_admin)) ? $path_to_admin : $txpath;
+    if (!@is_writable($dir.DS.'plugins')) {
+        $notReadable[] = array('{dirtype}' => 'plugin_dir', '{path}' => $dir.DS.'plugins');
     }
 
     if ($permlink_mode != 'messy' && $is_apache && !@is_readable($path_to_site.'/.htaccess')) {
@@ -585,7 +586,7 @@ function doDiagnostics()
         (isset($txpcfg['multisite_root_path'])) ? gTxt('diag_multisite_root_path').cs.$txpcfg['multisite_root_path'].n : '',
 
         priv.'$path_to_site'.cs.$path_to_site.n,
-        
+
         (isset($path_to_admin)) ? priv.'$path_to_admin'.cs.$path_to_admin.n : '',
 
         gTxt('diag_txp_path').cs.txpath.n,
