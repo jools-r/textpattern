@@ -1391,6 +1391,8 @@ function load_plugins($type = false, $pre = null)
     if ($rs) {
         $old_error_handler = set_error_handler("pluginErrorHandler");
         $pre = intval($pre);
+        $plugins_dir = $prefs['path_to_admin'].DS.'plugins';
+        $writable = is_dir($plugins_dir) && is_writable($plugins_dir);
 
         foreach ($rs as $a) {
             if (!isset($plugins_ver[$a['name']]) && (!$pre || $a['load_order'] < $pre)) {
@@ -1400,9 +1402,9 @@ function load_plugins($type = false, $pre = null)
                 $trace->start("[Loading plugin: '{$a['name']}' version '{$a['version']}']");
 
                 $dir = $a['name'];
-                $filename = $prefs['path_to_admin'].DS.'plugins'.DS.$dir.DS.$dir.'.php';
-        
-                if (!is_file($filename)) {
+                $filename = $plugins_dir.DS.$dir.DS.$dir.'.php';
+
+                if ($writable && !is_file($filename)) {
                     $code = safe_field('code', 'txp_plugin', "name='".doSlash($a['name'])."'");
                     \Txp::get('\Textpattern\Plugin\Plugin')->updateFile($a['name'], $code);
                 }
@@ -1411,7 +1413,7 @@ function load_plugins($type = false, $pre = null)
                 $trace->stop();
 
                 if ($eval_ok === false) {
-                    echo gTxt('plugin_load_error_above').'<strong>'.$a['name'].'</strong>'.n.br;
+                    trigger_error(gTxt('plugin_include_error', array('{name}' => $a['name'])), E_USER_WARNING);
                 }
 
                 unset($GLOBALS['txp_current_plugin']);
@@ -3130,8 +3132,8 @@ function fetch_form($name)
         $names = $fetch ? array_diff($name, array_keys($forms)) : array($name);
 
         if (has_handler('form.fetch')) {
-            foreach ($names as $form) {
-                $forms[$form] = callback_event('form.fetch', '', false, compact('form', 'skin'));
+            foreach ($names as $name) {
+                $forms[$name] = callback_event('form.fetch', '', false, compact('name', 'skin'));
             }
         } elseif ($fetch) {
             $nameset = implode(',', quote_list($names));
@@ -4410,10 +4412,6 @@ function pagelinkurl($parts, $inherit = array(), $url_mode = null)
     }
 
     if ($url_mode == 'messy') {
-        if (!empty($keys['context'])) {
-            $keys['context'] = gTxt($keys['context'].'_context');
-        }
-
         return hu.'index.php'.join_qs($keys);
     } else {
         // All clean URL modes use the same schemes for list pages.
@@ -4426,11 +4424,9 @@ function pagelinkurl($parts, $inherit = array(), $url_mode = null)
             $url = hu.'atom/';
             unset($keys['atom']);
         } elseif (!empty($keys['s'])) {
-            if (!empty($keys['context'])) {
-                $keys['context'] = gTxt($keys['context'].'_context');
-            }
             $url = hu.urlencode($keys['s']).'/';
             unset($keys['s']);
+
             if (!empty($keys['c']) && ($url_mode == 'section_category_title' || $url_mode == 'breadcrumb_title')) {
                 $catpath = $url_mode == 'breadcrumb_title' ?
                     array_column(getRootPath($keys['c'], empty($keys['context']) ? 'article' : $keys['context']), 'name') :
@@ -4439,19 +4435,16 @@ function pagelinkurl($parts, $inherit = array(), $url_mode = null)
                 unset($keys['c']);
             }
         } elseif (!empty($keys['month']) && $url_mode == 'year_month_day_title') {
-            if (!empty($keys['context'])) {
-                $keys['context'] = gTxt($keys['context'].'_context');
-            }
             $url = hu.implode('/', explode('-', urlencode($keys['month']))).'/';
             unset($keys['month']);
         } elseif (!empty($keys['author'])) {
-            $ct = empty($keys['context']) ? '' : strtolower(urlencode(gTxt($keys['context'].'_context'))).'/';
-            $url = hu.strtolower(urlencode(gTxt('author'))).'/'.$ct.urlencode($keys['author']).'/';
+            $ct = empty($keys['context']) ? '' : $keys['context'].'/';
+            $url = hu.'author'.'/'.$ct.urlencode($keys['author']).'/';
             unset($keys['author'], $keys['context']);
         } elseif (!empty($keys['c'])) {
             $catpath = array_column(getRootPath($keys['c'], empty($keys['context']) ? 'article' : $keys['context']), 'name');
-            $ct = empty($keys['context']) ? '' : strtolower(urlencode(gTxt($keys['context'].'_context'))).'/';
-            $url = hu.strtolower(urlencode(gTxt('category'))).'/'.$ct.urlencode($keys['c']).'/';
+            $ct = empty($keys['context']) ? '' : $keys['context'].'/';
+            $url = hu.'category'.'/'.$ct.urlencode($keys['c']).'/';
             unset($keys['c'], $keys['context']);
         }
 
@@ -4743,7 +4736,7 @@ function do_list($list, $delim = ',')
     $list = explode($delim, $list);
 
     if (isset($range)) {
-        $pattern = '/^\s*(\w|[-+]]?\d+)\s*'.preg_quote($range, '/').'\s*(\w|[-+]]?\d+)\s*$/';
+        $pattern = '/^\s*(\w|[-+]?\d+)\s*'.preg_quote($range, '/').'\s*(\w|[-+]?\d+)\s*$/';
         $out = array();
 
         foreach ($list as $item) {
