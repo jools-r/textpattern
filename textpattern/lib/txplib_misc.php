@@ -4412,6 +4412,10 @@ function pagelinkurl($parts, $inherit = array(), $url_mode = null)
     }
 
     if ($url_mode == 'messy') {
+        if (!empty($keys['context'])) {
+            $keys['context'] = gTxt($keys['context'].'_context');
+        }
+
         return hu.'index.php'.join_qs($keys);
     } else {
         // All clean URL modes use the same schemes for list pages.
@@ -4424,9 +4428,11 @@ function pagelinkurl($parts, $inherit = array(), $url_mode = null)
             $url = hu.'atom/';
             unset($keys['atom']);
         } elseif (!empty($keys['s'])) {
+            if (!empty($keys['context'])) {
+                $keys['context'] = gTxt($keys['context'].'_context');
+            }
             $url = hu.urlencode($keys['s']).'/';
             unset($keys['s']);
-
             if (!empty($keys['c']) && ($url_mode == 'section_category_title' || $url_mode == 'breadcrumb_title')) {
                 $catpath = $url_mode == 'breadcrumb_title' ?
                     array_column(getRootPath($keys['c'], empty($keys['context']) ? 'article' : $keys['context']), 'name') :
@@ -4435,16 +4441,19 @@ function pagelinkurl($parts, $inherit = array(), $url_mode = null)
                 unset($keys['c']);
             }
         } elseif (!empty($keys['month']) && $url_mode == 'year_month_day_title') {
+            if (!empty($keys['context'])) {
+                $keys['context'] = gTxt($keys['context'].'_context');
+            }
             $url = hu.implode('/', explode('-', urlencode($keys['month']))).'/';
             unset($keys['month']);
         } elseif (!empty($keys['author'])) {
-            $ct = empty($keys['context']) ? '' : $keys['context'].'/';
-            $url = hu.'author'.'/'.$ct.urlencode($keys['author']).'/';
+            $ct = empty($keys['context']) ? '' : strtolower(urlencode(gTxt($keys['context'].'_context'))).'/';
+            $url = hu.strtolower(urlencode(gTxt('author'))).'/'.$ct.urlencode($keys['author']).'/';
             unset($keys['author'], $keys['context']);
         } elseif (!empty($keys['c'])) {
             $catpath = array_column(getRootPath($keys['c'], empty($keys['context']) ? 'article' : $keys['context']), 'name');
-            $ct = empty($keys['context']) ? '' : $keys['context'].'/';
-            $url = hu.'category'.'/'.$ct.urlencode($keys['c']).'/';
+            $ct = empty($keys['context']) ? '' : strtolower(urlencode(gTxt($keys['context'].'_context'))).'/';
+            $url = hu.strtolower(urlencode(gTxt('category'))).'/'.$ct.urlencode($keys['c']).'/';
             unset($keys['c'], $keys['context']);
         }
 
@@ -4603,27 +4612,32 @@ function permlinkurl($article_array, $hu = hu)
             $out = "$section/$url_title";
             break;
         case 'section_category_title':
-            $out = $section.'/'.(empty($category1) ? '' : $category1.'/').(empty($category2) ? '' : $category2.'/').$url_title;
+            $out = $section.'/'.
+                (empty($category1) ? '' : urlencode($category1).'/').
+                (empty($category2) ? '' : urlencode($category2).'/').$url_title;
             break;
         case 'breadcrumb_title':
             $out = $section.'/';
             if (empty($category1)) {
                 if (!empty($category2)) {
-                    $out .= implode('/', array_reverse(array_column(getRootPath($category2), 'name'))).'/';
+                    $path = array_reverse(array_column(getRootPath($category2), 'name'));
+                    $out .= implode('/', array_map('urlencode', $path)).'/';
                 }
             } elseif (empty($category2)) {
-                $out .= implode('/', array_reverse(array_column(getRootPath($category1), 'name'))).'/';
+                $path = array_reverse(array_column(getRootPath($category1), 'name'));
+                $out .= implode('/', array_map('urlencode', $path)).'/';
             } else {
                 $c2_path = array_reverse(array_column(getRootPath($category2), 'name'));
                 if (in_array($category1, $c2_path)) {
-                    $out .= implode('/', $c2_path).'/';
+                    $out .= implode('/', array_map('urlencode', $c2_path)).'/';
                 } else {
                     $c1_path = array_reverse(array_column(getRootPath($category1), 'name'));
                     if (in_array($category2, $c1_path)) {
-                        $out .= implode('/', $c1_path).'/';
+                        $out .= implode('/', array_map('urlencode', $c1_path)).'/';
                     } else {
                         $c0_path = array_intersect($c1_path, $c2_path);
-                        $out .= ($c0_path ? implode('/', $c0_path).'/' : '')."$category1/$category2/";
+                        $out .= ($c0_path ? implode('/', array_map('urlencode', $c0_path)).'/' : '').
+                            urlencode($category1).'/'.urlencode($category2).'/';
                     }
                 }
             }
