@@ -2088,7 +2088,7 @@ textpattern.Route.add('article', function () {
         $field = '',
         $viewMode = $('#view_modes li.active [data-view-mode]');
         if (!$viewMode.length) $viewMode = $('#view_modes [data-view-mode]').first();
-        
+
     $pane.dialog({
         dialogClass: 'txp-preview-container',
         buttons: [],
