@@ -1802,7 +1802,7 @@ function link_to_home($atts, $thing = null)
 function txp_pager($atts, $thing = null, $newer = null)
 {
     global $thispage, $is_article_list, $txp_context, $txp_item;
-    static $pg = true, $numPages = null, $shown = array();
+    static $pg = true, $numPages = null, $top = 1, $shown = array();
     static $items = array('page' => null, 'total' => null, 'url' => null);
 
     $get = isset($atts['total']) && $atts['total'] === true;
@@ -1813,6 +1813,7 @@ function txp_pager($atts, $thing = null, $newer = null)
     extract(lAtts($set ? array(
         'pg'         => $pg,
         'total'      => $numPages,
+        'shift'      => 1,
         ) : array(
         'showalways' => false,
         'title'      => '',
@@ -1823,26 +1824,28 @@ function txp_pager($atts, $thing = null, $newer = null)
         'limit'      => 0,
         'break'      => '',) + 
         ($get ? array(
-        'total'      => $numPages,
+        'total'      => true,
         ) : array()), $atts));
 
     if ($set) {
         if (isset($total) && $total !== true) {
             $numPages = (int)$total;
         } elseif ($pg === true) {
-            $numPages = isset($thispage['numPages']) ? $thispage['numPages'] : null;
+            $numPages = isset($thispage['numPages']) ? (int)$thispage['numPages'] : null;
         }
     }
 
     if (!isset($numPages)) {
         if (isset($thispage['numPages'])) {
-            $numPages = $thispage['numPages'];
+            $numPages = (int)$thispage['numPages'];
         } else {
             return $is_article_list ? postpone_process() : '';
         }
     }
 
     if ($set) {
+        $oldtop = $top;
+        $top = $shift === true ? 0 : ((int)$shift < 0 ? $numPages + $shift + 1 : $shift);
         $oldshown = $shown;
         $shown = array();
 
@@ -1850,6 +1853,7 @@ function txp_pager($atts, $thing = null, $newer = null)
             $thing = parse($thing);
             $numPages = $oldPages;
             $pg = $oldpg;
+            $top = $oldtop;
             $shown = $oldshown;
         }
 
@@ -1873,19 +1877,23 @@ function txp_pager($atts, $thing = null, $newer = null)
     }
     
     if (isset($range)) {
-        $pages = !$range ? array() :
-            ($newer === null ? range(-max($range, 2*$range + $thepg - $numPages), max($range, 2*$range - $thepg + 1)) :
-                range($newer ? max($range, 2*$range + $thepg - $numPages) : 1, $newer ? 1 : max($range, 2*$range - $thepg + 1))
-            );
+        if (!$range) {
+            $pages = array();
+        } elseif ($range > 0) {
+            $pages = $newer === null ? range(-max($range, 2*$range + $thepg - $numPages), max($range, 2*$range - $thepg + 1)) :
+                range($newer ? max($range, 2*$range + $thepg - $numPages) : 1, $newer ? 1 : max($range, 2*$range - $thepg + 1));
+        } else {
+            $pages = $newer !== null ? ($newer ? range(-1, -max(-$range, -2*$range + $thepg - $numPages)) : range(-max(-$range, -2*$range - $thepg + 1), -1)) :
+                range(min(max(1 - $range - $thepg, 1 - 2*$range - $numPages), 0), max(0, min($numPages + $range - $thepg, $numPages + 2*$range - 1)));
+        }
     } elseif (is_bool($shift)) {
-        $pages = $newer === null ? range(1 - $thepg, $numPages - $thepg) : array($shift ? true : 1);
+        $pages = $newer === null ? ($shift ? range(1 - $thepg, $numPages - $thepg) : array(0)) : array($shift ? true : 1);
     } else {
         $pages = array_map('intval', do_list($shift, array(',', '-')));
     }
 
     foreach ($items as $item => $val) {
         $items[$item] = isset($txp_item[$item]) ? $txp_item[$item] : null;
-        $txp_item[$item] = null;
     }
 
     $txp_item['total'] = $numPages;
@@ -1903,9 +1911,9 @@ function txp_pager($atts, $thing = null, $newer = null)
             $nextpg = $page === true ? $numPages : ((int)$page < 0 ? $numPages + $page + 1 : $thepg + $page);
         }
 
-        if ($nextpg >= ($newer === false ? $thepg : 1) && $nextpg <= ($newer === true ? $thepg : $numPages)) {
+        if ($nextpg >= ($newer === false ? $thepg + 1 : 1) && $nextpg <= ($newer === true ? $thepg - 1 : $numPages)) {
             if (empty($shown[$nextpg]) || $showalways) {
-                $txp_context[$pgc] = $newer && ($nextpg == 1 && $shift === false || $shift === true) ? null : $nextpg;
+                $txp_context[$pgc] = $nextpg == $top ? null : $nextpg;
                 $url = pagelinkurl($txp_context);
                 $txp_item['page'] = $nextpg;
                 $txp_item['url'] = $url;
