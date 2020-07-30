@@ -2,45 +2,45 @@
 <resources>
 <help lang="es">
     <group id="admin" title="Panel de usuario">
-        <item id="about_privileges" title="Sobre roles"><![CDATA[
+        <item id="about_privileges" title="Acerca de roles"><![CDATA[
 <h2>Acerca de los roles</h2>
 <h3>Editor</h3>
 <ul>
     <li>Puede gestionar artículos, comentarios y enlaces</li>
     <li>Puede usar PHP en los artículos si la preferencia de administración ’Permitir PHP en los artículos’ está marcada como ’Sí’</li>
-    <li>puede gestiornar imágenes y archivos</li>
-    <li>puede gestiornar secciones y categorías</li>
-    <li>puede gestiornar Páginas, bloques y estilo</li>
-    <li>puede ver la información de diagnósitico</li>
+    <li>puede gestionar imágenes y archivos</li>
+    <li>puede gestionar secciones y categorías</li>
+    <li>puede gestionar Páginas, bloques y estilo</li>
+    <li>puede ver la información de diagnóstico</li>
     <li>puede gestionar las preferencias del sitio</li>
     <li>puede gestionar usuarios</li>
     <li>puede gestionar el registro de visitas</li>
-    <li>puede gestionar plugins</li>
+    <li>puede gestionar complementos</li>
     <li>puede importar datos</li>
 </ul>
 <h3>Director editorial</h3>
 <ul>
     <li>Puede gestionar artículos, comentarios y enlaces</li>
     <li>Puede usar PHP en los artículos si la preferencia de administración ’Permitir PHP en los artículos’ está marcada como ’Sí’</li>
-    <li>puede gestiornar imágenes y archivos</li>
-    <li>puede gestiornar secciones y categorías</li>
-    <li>puede gestiornar Páginas, bloques y estilo</li>
-    <li>puede ver la información de diagnósitico</li>
+    <li>puede gestionar imágenes y archivos</li>
+    <li>puede gestionar secciones y categorías</li>
+    <li>puede gestionar páginas, bloques y estilo</li>
+    <li>puede ver la información de diagnóstico</li>
     <li>can manage site preferences</li>
     <li>Puede ver usuarios</li>
     <li>puede gestionar el registro de visitas</li>
-   <li>puede gestionar plugins</li>
+   <li>puede gestionar complementos</li>
     <li>puede importar datos</li>
 </ul>
 <h3>Editor de contenido</h3>
 <ul>
-    <li>can manage articles with one limitation:
+    <li>puede manejar artículos con una limitante:
         <ul>
-            <li>No puede borrar contenidos que no le pertenezcan</li>
+            <li>No puede borrar contenidos que pertenezcan a otros usuarios</li>
         </ul>
     </li>
       <li>Puede gestionar comentarios y enlaces</li>
-    <li>puede gestiornar imágenes y archivos</li>
+    <li>puede gestionar imágenes y archivos</li>
     <li>puede gestionar categorías</li>
     <li>puede gestionar páginas y bloques</li>
     <li>Puede ver usuarios</li>
@@ -48,14 +48,14 @@
 </ul>
 <h3>Escritor de plantilla</h3>
 <ul>
-    <li>can manage own articles, view other users’ articles</li>
-    <li>can manage images and files</li>
+    <li>puede manejar sus artículos con un límite, ver los  artículos de otros usuarios</li>
+    <li>puede manejar imágenes y archivos </li>
 </ul>
 <h3>Freelancer</h3>
 <ul>
-    <li>Puede gestionar sus propios artículos de modo limitado:
+    <li>Puede gestionar sus  artículos limitadamente:
         <ul>
-            <li>Puede modificar un artículo sólo antes de que sea publicado</li>
+            <li>Puede modificar un artículo solo antes que sea publicado</li>
             <li><em>Sólo</em> puede aplicar los estados de Borrador, Oculto o Pendiente</li>
         </ul>
     </li>
@@ -315,9 +315,9 @@
  </div>
  <p> Además de los requisitos del sistema anteriores, se requieren las siguientes extensiones de PHP: </p>
  <ul>
-     <li><a rel="external" target="_blank" href="https://secure.php.net/manual/en/book.mysqli.php"> mysqli <span class="ui-icon ui-icon-extlink"> (abre un enlace externo en una nueva ventana) </span> </a></li>
-     <li><a rel="external" target="_blank" href="https://secure.php.net/manual/en/book.xml.php"> XML <span class="ui-icon ui-icon-extlink"> (abre un enlace externo en una nueva ventana) </span> </a></li>
-     <li><a rel="external" target="_blank" href="https://secure.php.net/manual/en/book.json.php"> JSON <span class="ui-icon ui-icon-extlink"> (abre un enlace externo en una nueva ventana) </span> </a></li>
+     <li><a rel="external" target="_blank" href="https://www.php.net/manual/en/book.mysqli.php"> mysqli <span class="ui-icon ui-icon-extlink"> (abre un enlace externo en una nueva ventana) </span> </a></li>
+     <li><a rel="external" target="_blank" href="https://www.php.net/manual/en/book.xml.php"> XML <span class="ui-icon ui-icon-extlink"> (abre un enlace externo en una nueva ventana) </span> </a></li>
+     <li><a rel="external" target="_blank" href="https://www.php.net/manual/en/book.json.php"> JSON <span class="ui-icon ui-icon-extlink"> (abre un enlace externo en una nueva ventana) </span> </a></li>
  </ul>
  <p> El archivo <code> php.ini </code> del sitio, ya sea global o local, debe contener una configuración <code> date.timezone </code>configuración. </p>        ]]></item>
         <item id="setup_still_exists" title="El directorio de instalación aún existe"><![CDATA[
@@ -344,12 +344,12 @@
         ]]></item>
         <item id="textpattern_version_update_beta" title="Versión pre-lanzamiento de Textpattern disponible"><![CDATA[
 <h2>Versión pre-lanzamiento de Textpattern disponible</h2>
-<p>Hay una versión beta más reciente  de Textpattern disponible. Estamos buscando voluntarios activos para probar esta versión y poder hacer la versión final lo más robusta posible. Buscamos hacer la experiencia de actualización lo más fluida y fácil, aún para la versión beta.</p>
+<p>Hay una versión beta más reciente  de Textpattern disponible. Estamos buscando voluntarios activos para probar esta versión y poder hacer la versión final tan solida como sea posible. Buscamos hacer la experiencia de actualización lo  fluida y fácil, aún para la versión beta.</p>
 <p>Si decidiera participar, por favor note:</p>
 <ul>
-    <li>No use esta versión beta en un sitio en producción a menos de que tenga un backup funcional de los archivos y la base de datos del sitio, y sepa cómo usarlos.</li>
-    <li>Por favor <a href="https://github.com/textpattern/textpattern/issues">reporte cualquier problema</a>, mencionando la versión beta que está usando. Pueden requerirse otras versiones beta antes de la versión estable, dependiendo de los problemas repostados.</li>
-    <li>Asegúrese que si instala esta versión beta, también actualice a la versión final cuando sea lanzada.</li>
+    <li>No use esta versión beta en un sitio en producción a menos de que tenga una copia de seguridad funcional de los archivos, así como la base de datos del sitio, y conocimiento de cómo usarlos.</li>
+    <li>Por favor <a href="https://github.com/textpattern/textpattern/issues">reporte cualquier problema</a>, mencionando la versión beta que está usando. Pueden requerirse otras versiones beta antes de la versión estable, dependiendo de los problemas reportados.</li>
+    <li>Asegúrese que si implementa este lanzamiento beta, también actualice a la versión final cuando sea lanzada.</li>
 </ul>
         ]]></item>
         <item id="tmp_plugin_paths_match" title="Las rutas del directorio temporal y del directorio de caché de plugins no deben coincidir"><![CDATA[
@@ -361,7 +361,7 @@
         ]]></item>
         <item id="warn_mail_unavailable" title="Su instalación de PHP no tiene la función mail()"><![CDATA[
 <h2> Su instalación de PHP no tiene la función mail()</h2>
-<p>La función PHP <a rel="external" target="_blank" href="https://secure.php.net/manual/en/function.mail.php">mail <span class="ui-icon ui-icon-extlink">(abre un enlace externo en una nueva ventana)</span></a> está desactivada. Por lo tanto, Textpattern no puede enviar correos electrónicos y algunas funciones no estarán disponibles. Por ejemplo, no se enviarán notificaciones por correo electrónico para nuevos comentarios, y los nuevos usuarios no recibirán un correo electrónico de bienvenida. Sin embargo, se pueden agregar usuarios.</p>        ]]></item>
+<p>La función PHP <a rel="external" target="_blank" href="https://www.php.net/manual/en/function.mail.php">mail <span class="ui-icon ui-icon-extlink">(abre un enlace externo en una nueva ventana)</span></a> está desactivada. Por lo tanto, Textpattern no puede enviar correos electrónicos y algunas funciones no estarán disponibles. Por ejemplo, no se enviarán notificaciones por correo electrónico para nuevos comentarios, y los nuevos usuarios no recibirán un correo electrónico de bienvenida. Sin embargo, se pueden agregar usuarios.</p>        ]]></item>
     </group>
 
     <group id="file" title="Panel de archivos">
@@ -482,7 +482,7 @@
         <item id="admin_side_plugins" title="¿Usar plugins administrativos?"><![CDATA[
 <h2>¿Usar plugins de administración?</h2>
 <p>Los plugins de administración pueden cambiar el funcionamiento de la interfaz de administración. Podría afectar acciones existentes, como la edición o publicación de artículos, o añadir nuevos paneles para una funciones añadidas o ampliadas.</p>
-<p>Si quieres saber más sobre los plugins dadministración consulta la página <a rel="external" target="_blank" href="https://docs.textpattern.com/development/">Extending Textpattern</a> en la <a rel="external" target="_blank" href="https://docs.textpattern.com/">Documentación de usuario de Textpattern</a>. Los plugins de todo tipo están listados en el sitio de <a rel="external" target="_blank" href="https://textpattern.org/">Recursos</a>.</p>
+<p>Si quieres saber más sobre los plugins dadministración consulta la página <a rel="external" target="_blank" href="https://docs.textpattern.com/development/">Extending Textpattern</a> en la <a rel="external" target="_blank" href="https://docs.textpattern.com/">Documentación de usuario de Textpattern</a>. Los plugins de todo tipo están listados en el sitio de <a rel="external" target="_blank" href="https://plugins.textpattern.com/">Textpattern Plugins</a>.</p>
         ]]></item>
         <item id="advanced_options" title="Opciones avanzadas"><![CDATA[
 <h2>Opciones avanzadas</h2>
@@ -691,7 +691,7 @@
         <item id="publish_expired_articles" title="¿Mostrar los artículos caducados?"><![CDATA[]]></item>
         <item id="publisher_email" title="Enviar la información de registro desde esta dirección de correo"><![CDATA[]]></item>
         <item id="rss_how_many" title="¿Cuántos artículos se incluirán en los feeds?"><![CDATA[]]></item>
-        <item id="send_lastmod" title=""><![CDATA[]]></item>
+        <item id="send_lastmod" title="¿Enviar &quot;Última modificación&quot; encabezado?"><![CDATA[]]></item>
         <item id="show_comment_count_in_feed" title="¿Mostrar contador de comentarios en los feeds?"><![CDATA[]]></item>
         <item id="site_slogan" title="Eslogan del sitio"><![CDATA[]]></item>
         <item id="sitename" title="Nombre del sitio"><![CDATA[]]></item>
@@ -702,14 +702,14 @@
         <item id="syndicate_body_or_excerpt" title="¿Sindicar sólo el resumen del artículo?"><![CDATA[]]></item>
         <item id="tempdir" title="Ruta al directorio temporal"><![CDATA[]]></item>
         <item id="theme_name" title="Tema de administración"><![CDATA[]]></item>
-        <item id="txp_evaluate_functions" title=""><![CDATA[]]></item>
+        <item id="txp_evaluate_functions" title="Funciones PHP habilitadas en txp:evaluate"><![CDATA[]]></item>
         <item id="use_comments" title="¿Permitir comentarios?"><![CDATA[]]></item>
         <item id="use_mail_on_feeds_id" title="¿Usar email para la ID de los feeds? Por defecto la URL del sitio"><![CDATA[]]></item>
         <item id="use_plugins" title="¿Usar plugins?"><![CDATA[]]></item>
         <item id="use_textile" title="Emplear Textile?"><![CDATA[]]></item>
     </group>
 
-    <group id="section" title="">
+    <group id="section" title="Panel de secciones">
         <item id="section_category" title="Introducción"><![CDATA[]]></item>
         <item id="section_default" title="Sección por defecto para publicar"><![CDATA[]]></item>
         <item id="section_description" title="Descripción"><![CDATA[]]></item>
@@ -721,7 +721,7 @@
         <item id="section_uses_skin" title="Utiliza el tema"><![CDATA[]]></item>
     </group>
 
-    <group id="setup" title="">
+    <group id="setup" title="Panel de configuración">
         <item id="setup_user_login" title="Nombre de usuario"><![CDATA[]]></item>
         <item id="setup_user_pass" title="Contraseña de Usuario"><![CDATA[]]></item>
         <item id="table_prefix" title="Prefijo de tabla"><![CDATA[]]></item>

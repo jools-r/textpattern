@@ -518,9 +518,8 @@ function nav_form($event, $page, $numPages, $sort = '', $dir = '', $crit = '', $
     }
 
     $out[] = n.tag(join($nav).n, 'nav', array(
-        'class'      => 'prev-next',
+        'class'      => ($numPages > 1 ? 'prev-next' : 'prev-next ui-helper-hidden'),
         'aria-label' => gTxt('page_nav'),
-        'style'      => ($numPages > 1 ? false : 'display:none'),
     ));
 
     return join('', $out);
@@ -548,10 +547,9 @@ function wrapRegion($id, $content = '', $anchor_id = '', $label = '', $pane = ''
     if ($anchor_id && $pane) {
         $heading_class = 'txp-summary'.($visible ? ' expanded' : '');
         $display_state = array(
-            'class' => 'toggle',
+            'class' => $visible ? 'toggle' : 'toggle ui-helper-hidden',
             'id'    => $anchor_id,
             'role'  => 'group',
-            'style' => $visible ? '' : 'display:none',
         );
 
         $label = href($label, '#'.$anchor_id, array(
@@ -920,18 +918,25 @@ function inputLabel($name, $input, $label = '', $help = array(), $atts = array()
 
 function tag($content, $tag, $atts = '')
 {
+    static $tags = array();
+
     if (empty($tag) || $content === '') {
         return $content;
     }
 
-    $atts = $atts ? join_atts($atts) : '';
+    if (!isset($tags[$tag])) {
+        $tags[$tag] = preg_match('/^\w[\w\-\.\:]*$/', $tag) ? 1 :
+            (strpos($tag, '<+>') === false ? 2 : 3);
+    }
 
-    if (preg_match('/^\w[\w\-\.\:]*$/', $tag)) {
-        return '<'.$tag.$atts.'>'.$content.'</'.$tag.'>';
-    } elseif (strpos($tag, '<+>') === false) {
-        return $tag.$content.$tag;
-    } else {
-        return str_replace('<+>', $content, $tag);
+    switch ($tags[$tag]) {
+        case 1:
+            $atts = $atts ? join_atts($atts) : '';
+            return '<'.$tag.$atts.'>'.$content.'</'.$tag.'>';
+        case 2:
+            return $tag.$content.$tag;
+        default:
+            return str_replace('<+>', $content, $tag);
     }
 }
 
@@ -1154,20 +1159,27 @@ function assHead()
  * The rendered link can be customised via a 'admin_help > {$help_var}'
  * pluggable UI callback event.
  *
- * @param  string $help_var Help topic
- * @param  int    $width    Popup window width
- * @param  int    $height   Popup window height
- * @param  string $class    HTML class
- * @param  string $inline   Inline pophelp
- * @return string HTML
+ * @param  string|array $help_var Help topic or topic and lang in an array
+ * @param  int          $width    Popup window width
+ * @param  int          $height   Popup window height
+ * @param  string       $class    HTML class
+ * @param  string       $inline   Inline pophelp
+ * @return string       HTML
  */
 
 function popHelp($help_var, $width = 0, $height = 0, $class = 'pophelp', $inline = '')
 {
     global $txp_user, $prefs;
 
+    $lang = null;
+
     if (empty($help_var) || empty($prefs['module_pophelp'])) {
         return '';
+    }
+
+    if (is_array($help_var)) {
+        $lang = empty($help_var[1]) ? null : $help_var[1];
+        $help_var = $help_var[0];
     }
 
     $url = filter_var($help_var, FILTER_VALIDATE_URL);
@@ -1186,7 +1198,7 @@ function popHelp($help_var, $width = 0, $height = 0, $class = 'pophelp', $inline
         } elseif (empty($txp_user)) {
             // Use inline pophelp, if unauthorized user or setup stage
             if (class_exists('\Textpattern\Module\Help\HelpAdmin')) {
-                $atts['data-item'] = \Txp::get('\Textpattern\Module\Help\HelpAdmin')->pophelp($help_var);
+                $atts['data-item'] = \Txp::get('\Textpattern\Module\Help\HelpAdmin')->pophelp($help_var, $lang);
             }
         } else {
             $url = '?event=help&step=pophelp&item='.urlencode($help_var);
@@ -1436,17 +1448,13 @@ function upload_form($label, $pophelp, $step, $event, $id = '', $max_file_size =
                 $wraptag_class,
                 $wraptag_val
             ).
-            tag(null, 'progress', array(
-                'class' => 'txp-upload-progress',
-                'style' =>  'display:none',
-            )),
+            tag(null, 'progress', array('class' => 'txp-upload-progress ui-helper-hidden')),
             'form',
             array(
                 'class'   => 'upload-form'.($class ? ' '.trim($class) : ''),
                 'method'  => 'post',
                 'enctype' => 'multipart/form-data',
                 'action'  => "index.php?event=$event&step=$step",
-                'style'   => 'position:relative',
             )
         ),
         $argv
@@ -1793,6 +1801,29 @@ function doWrap($list, $wraptag, $break, $class = null, $breakclass = null, $att
         $list = array_map('trim', $list);
     }
 
+    if ($break === true) {
+        switch (strtolower($wraptag)) {
+            case 'ul':
+            case 'ol':
+                $break = 'li';
+            break;
+            case 'p':
+                $break = 'br';
+            break;
+            case 'table':
+            case 'tbody':
+            case 'thead':
+            case 'tfoot':
+                $break = 'tr';
+            break;
+            case 'tr':
+                $break = 'td';
+            break;
+            default:
+                $break = n;
+        }
+    }
+
     if (strpos($break, '<+>') !== false) {
         $content = array_reduce($list, function ($carry, $item) use ($break) {
             return $carry.str_replace('<+>', $item, $break);
@@ -1805,8 +1836,6 @@ function doWrap($list, $wraptag, $break, $class = null, $breakclass = null, $att
         }
 
         $content = join($break, $list);
-    } elseif ($break === true) {
-        $content = join(n, $list);
     } else {
         $content = "<{$break}{$breakatts}>".join("</$break>".n."<{$break}{$breakatts}>", $list)."</{$break}>";
     }

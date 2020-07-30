@@ -133,6 +133,10 @@ function pagetop($pagetitle = '', $message = '')
                         '#page-file #description,'.
                         '#page-link #link-title, #page-link #link-description'
                     ),
+                    'language_ui' => get_pref(
+                        'language_ui',
+                        TEXTPATTERN_DEFAULT_LANG
+                    ),
                     'message' => '<span class="ui-icon ui-icon-{status}"></span> {message}',
                     'messagePane' => '<span class="messageflash {status}" role="alert" aria-live="assertive">
     {message}
@@ -152,14 +156,6 @@ echo script_js("
             alert('Please force-reload the page or clear your browser caches.')
         }
     })", false);
-
-    // Mandatory un-themable Textpattern core styles ?>
-<style>
-.not-ready main {
-    opacity: 0;
-}
-</style>
-<?php
 echo $theme->html_head();
 echo $theme->html_head_custom();
     callback_event('admin_side', 'head_end'); ?>

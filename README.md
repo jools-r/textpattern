@@ -1,5 +1,7 @@
 # Textpattern CMS
 
+[![Crowdin](https://badges.crowdin.net/textpattern-cms-textpacks/localized.svg)](https://crowdin.com/project/textpattern-cms-textpacks)
+
 [![Textpattern Logo](https://textpattern.com/assets/img/branding/carver/carver-64px.svg)](https://textpattern.com/)
 
 **A flexible, elegant, fast and easy-to-use content management system written in PHP.** Textpattern is [free and open source](#legal) software.
@@ -14,7 +16,7 @@
 * [Thank you](#thank-you)
 * [Legal](#legal)
 
-![Textpattern CMS screenshots](https://textpattern.com/assets/img/com/readme-device-screens.jpg)
+![Textpattern CMS screenshots](https://textpattern.com/assets/img/com/readme-device-screens.png)
 
 ## System requirements
 
@@ -24,14 +26,14 @@ Ensure the server meets or exceeds the [system requirements](https://textpattern
 
 ## Download Textpattern
 
-The current production release is version 4.8.1. It can be downloaded from the Textpattern website or GitHub in .zip and .tar.gz varieties.
+The current production release is version 4.8.2. It can be downloaded from the Textpattern website or GitHub in .zip and .tar.gz varieties.
 
 If you want to use the multi-site functionality in Textpattern, get the .tar.gz archive.
 
 |        |  textpattern.com  | GitHub |
 |--------|:-------:|:-----:|
-| .zip   | [Download](https://textpattern.com/file_download/101/textpattern-4.8.1.zip) | [Download](https://github.com/textpattern/textpattern/releases/download/4.8.1/textpattern-4.8.1.zip) |
-| .tar.gz | [Download](https://textpattern.com/file_download/100/textpattern-4.8.1.tar.gz) | [Download](https://github.com/textpattern/textpattern/releases/download/4.8.1/textpattern-4.8.1.tar.gz) |
+| .zip   | [Download](https://textpattern.com/file_download/103/textpattern-4.8.2.zip) | [Download](https://github.com/textpattern/textpattern/releases/download/4.8.2/textpattern-4.8.2.zip) |
+| .tar.gz | [Download](https://textpattern.com/file_download/102/textpattern-4.8.2.tar.gz) | [Download](https://github.com/textpattern/textpattern/releases/download/4.8.2/textpattern-4.8.2.tar.gz) |
 
 
 ## Install Textpattern
@@ -109,8 +111,8 @@ npm run get-dependencies
 To request a specific tag or branch:
 
 ```ShellSession
-npm run get-default-theme 4.8.1
-npm run get-classic-admin-theme 4.8.1
+npm run get-default-theme 4.8.2
+npm run get-classic-admin-theme 4.8.2
 npm run get-classic-admin-theme 4.8.x
 npm run get-hive-admin-theme 4.8.x
 npm run get-textpacks 4.8.x
@@ -150,4 +152,4 @@ Includes contributions licensed under the GNU Lesser General Public License. See
 
 Includes contributions licensed under the New BSD License. See [LICENSE-BSD-3.txt](https://github.com/textpattern/textpattern/blob/master/textpattern/lib/LICENSE-BSD-3.txt) for terms and conditions.
 
-![Textpattern CMS blogging illustration](https://textpattern.com/assets/img/com/readme-footer.jpg)
+![Textpattern CMS blogging illustration](https://textpattern.com/assets/img/com/readme-footer.png)

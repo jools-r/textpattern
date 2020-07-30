@@ -180,7 +180,7 @@ function image_list($message = '')
         LEFT JOIN ".safe_pfx_j('txp_category')." ON txp_category.name = txp_image.category AND txp_category.type = 'image'
         LEFT JOIN ".safe_pfx_j('txp_users')." ON txp_users.name = txp_image.author";
 
-    if ($criteria === 1) {
+    if ($crit === '') {
         $total = getCount('txp_image', $criteria);
     } else {
         $total = getThing("SELECT COUNT(*) FROM $sql_from WHERE $criteria");
@@ -233,7 +233,7 @@ function image_list($message = '')
     if ($total < 1) {
         $contentBlock .= graf(
             span(null, array('class' => 'ui-icon ui-icon-info')).' '.
-            gTxt($criteria != 1 ? 'no_results_found' : 'no_images_recorded'),
+            gTxt($crit === '' ? 'no_images_recorded' : 'no_results_found'),
             array('class' => 'alert-block information')
         );
     } else {
@@ -625,7 +625,7 @@ function image_edit($message = '', $id = '')
             ? pluggable_ui(
                 'image_ui',
                 'image_edit',
-                upload_form('replace_image', 'replace_image_form', 'image_replace', 'image', $id, $file_max_upload_size, 'image-upload', ' image-replace'),
+                upload_form('replace_image', 'replace_image_form', 'image_replace', 'image', $id, $file_max_upload_size, 'image-upload', ' image-replace', array('div', 'div'), '' ,'image/*'),
                 $rs)
             : ''
         );
@@ -646,7 +646,7 @@ function image_edit($message = '', $id = '')
             ? pluggable_ui(
             'image_ui',
             'thumbnail_edit',
-            upload_form('upload_thumbnail', 'upload_thumbnail', 'thumbnail_insert', 'image', $id, $file_max_upload_size, 'thumbnail-upload', ' thumbnail-upload'),
+            upload_form('upload_thumbnail', 'upload_thumbnail', 'thumbnail_insert', 'image', $id, $file_max_upload_size, 'thumbnail-upload', ' thumbnail-upload', array('div', 'div'), '' ,'image/*'),
             $rs)
             : ''
         );

@@ -531,7 +531,7 @@ function output_form($atts, $thing = null)
         $txp_yield[$name][] = array($value, false);
     }
 
-    $yield[] = isset($thing) ? array($thing) : null;//$thing; ? parse($thing) : $thing;
+    $yield[] = $thing;
     $out = parse_form($form);
     array_pop($yield);
 
@@ -1152,22 +1152,25 @@ function related_articles($atts, $thing = null)
         'form'     => '',
         'limit'    => 10,
         'offset'   => 0,
-        'match'    => 'Category1,Category2',
+        'match'    => 'Category',
         'no_widow' => '',
         'section'  => '',
         'sort'     => 'Posted DESC',
         'wraptag'  => '',
     ), $atts);
 
-    $match = array_intersect(do_list_unique(strtolower($atts['match'])), array_merge(array('category1', 'category2', 'author', 'keywords'), getCustomFields()));
+    $match = array_intersect(do_list_unique(strtolower($atts['match'])), array_merge(array('category', 'category1', 'category2', 'author', 'keywords'), getCustomFields()));
     $categories = $cats = array();
 
     foreach ($match as $cf) {
         switch ($cf) {
+            case 'category':
             case 'category1':
             case 'category2':
-                if (!empty($thisarticle[$cf])) {
-                    $cats[] = $thisarticle[$cf];
+                foreach(($cf == 'category' ? array('category1', 'category2') : array($cf)) as $cat) {
+                    if (!empty($thisarticle[$cat])) {
+                        $cats[] = $thisarticle[$cat];
+                    }
                 }
 
                 $categories[] = ucwords($cf);
@@ -1802,7 +1805,7 @@ function link_to_home($atts, $thing = null)
 function txp_pager($atts, $thing = null, $newer = null)
 {
     global $thispage, $is_article_list, $txp_context, $txp_item;
-    static $pg = true, $numPages = null, $top = 1, $shown = array();
+    static $pg = true, $numPages = null, $linkall = false, $top = 1, $shown = array();
     static $items = array('page' => null, 'total' => null, 'url' => null);
 
     $get = isset($atts['total']) && $atts['total'] === true;
@@ -1815,15 +1818,16 @@ function txp_pager($atts, $thing = null, $newer = null)
         'total'      => $numPages,
         'shift'      => 1,
         'showalways' => true,
+        'link'       => false,
         ) : array(
         'showalways' => false,
         'title'      => '',
-        'link'       => false,
+        'link'       => $linkall,
         'escape'     => 'html',
         'rel'        => '',
         'shift'      => false,
         'limit'      => 0,
-        'break'      => '',) + 
+        'break'      => '',) +
         ($get ? array(
         'total'      => true,
         ) : array()), $atts));
@@ -1848,6 +1852,8 @@ function txp_pager($atts, $thing = null, $newer = null)
         $oldtop = $top;
         $top = $shift === true ? 0 : ((int)$shift < 0 ? $numPages + $shift + 1 : $shift);
         $oldshown = $shown;
+        $oldlink = $linkall;
+        $linkall = $link;
         $shown = array();
 
         if ($thing !== null) {
@@ -1855,6 +1861,7 @@ function txp_pager($atts, $thing = null, $newer = null)
             $numPages = $oldPages;
             $pg = $oldpg;
             $top = $oldtop;
+            $linkall = $oldlink;
             $shown = $oldshown;
         }
 
@@ -1876,7 +1883,7 @@ function txp_pager($atts, $thing = null, $newer = null)
             $range = (int)$shift;
         }
     }
-    
+
     if (isset($range)) {
         if (!$range) {
             $pages = array();
@@ -1915,7 +1922,7 @@ function txp_pager($atts, $thing = null, $newer = null)
         }
 
         if (
-            $nextpg >= ($newer === false && $range !== false ? $thepg + 1 : 1) && 
+            $nextpg >= ($newer === false && $range !== false ? $thepg + 1 : 1) &&
             $nextpg <= ($newer === true && $range !== false ? $thepg - 1 : $numPages)
         ) {
             if (empty($shown[$nextpg]) || $showalways) {
@@ -2212,7 +2219,7 @@ function comments_form($atts, $thing = null)
     if (!checkCommentsAllowed($thisid)) {
         $out = graf(gTxt('comments_closed'), ' id="comments_closed"');
     } elseif ($blacklisted) {
-        $out = graf(gTxt('your_ip_is_blacklisted_by'.' '.$blacklisted), ' id="comments_blacklisted"');
+        $out = graf(gTxt('your_ip_is_blacklisted_by'.' '.$blacklisted), ' id="comments_blocklisted"');
     } elseif (gps('commented') !== '') {
         $out = gTxt('comment_posted');
 
@@ -3448,6 +3455,7 @@ function images($atts, $thing = null)
         'realname'    => '',
         'extension'   => '',
         'thumbnail'   => '',
+        'size'        => '',
         'auto_detect' => 'article, category, author',
         'break'       => br,
         'wraptag'     => '',
@@ -3463,7 +3471,7 @@ function images($atts, $thing = null)
     $safe_sort = sanitizeForSort($sort);
     $where = array();
     $has_content = $thing || $form;
-    $filters = isset($atts['id']) || isset($atts['name']) || isset($atts['category']) || isset($atts['author']) || isset($atts['realname']) || isset($atts['extension']) || $thumbnail === '1' || $thumbnail === '0';
+    $filters = isset($atts['id']) || isset($atts['name']) || isset($atts['category']) || isset($atts['author']) || isset($atts['realname']) || isset($atts['extension']) || isset($atts['size']) || $thumbnail === '1' || $thumbnail === '0';
     $context_list = (empty($auto_detect) || $filters) ? array() : do_list_unique($auto_detect);
     $pageby = ($pageby == 'limit') ? $limit : $pageby;
 
@@ -3497,6 +3505,29 @@ function images($atts, $thing = null)
 
     if ($thumbnail === '0' || $thumbnail === '1') {
         $where[] = "thumbnail = $thumbnail";
+    }
+
+    // Handle aspect ratio filtering.
+    if ($size === 'portrait') {
+        $where[] = "h > w";
+    } elseif ($size === 'landscape') {
+        $where[] = "w > h";
+    } elseif ($size === 'square') {
+        $where[] = "w = h";
+    } elseif (is_numeric($size)) {
+        $where[] = "ROUND(w/h, 2) = $size";
+    } elseif (strpos($size, ':') !== false) {
+        $ratio = explode(':', $size);
+        $ratiow = $ratio[0];
+        $ratioh = !empty($ratio[1]) ? $ratio[1] : '';
+
+        if (is_numeric($ratiow) && is_numeric($ratioh)) {
+            $where[] = "ROUND(w/h, 2) = ".round($ratiow/$ratioh, 2);
+        } elseif (is_numeric($ratiow)) {
+            $where[] = "w = $ratiow";
+        } elseif (is_numeric($ratioh)) {
+            $where[] = "h = $ratioh";
+        }
     }
 
     // If no images are selected, try...
@@ -3541,12 +3572,12 @@ function images($atts, $thing = null)
         $safe_sort = "FIELD(id, $id)";
     }
 
-    // If nothing matches, output nothing.
+    // If nothing matches from the filterable attributes, output nothing.
     if (!$where && $filters) {
         return '';
     }
 
-    // If nothing matches, start with all images.
+    // If no images are filtered, start with all images.
     if (!$where) {
         $where[] = "1 = 1";
     }
@@ -3985,8 +4016,8 @@ function permlink($atts, $thing = null)
 
     $id = $atts['id'];
 
-    if (!$id) {
-        assert_article();
+    if (!$id && !assert_article()) {
+        return;
     }
 
     $txp_context = get_context(isset($extralAtts) ? $extralAtts : $atts['context']);
@@ -4276,7 +4307,7 @@ function if_section($atts, $thing = null)
 
 function if_article_section($atts, $thing = null)
 {
-    global $thisarticle;
+    global $thisarticle, $txp_sections;
 
     assert_article();
 
@@ -4284,7 +4315,7 @@ function if_article_section($atts, $thing = null)
 
     $section = $thisarticle['section'];
 
-    $x = in_list($section, $name);
+    $x = $name === true ? !empty($txp_sections[$section]['page']) : in_list($section, $name);
     return isset($thing) ? parse($thing, $x) : $x;
 }
 
@@ -5421,7 +5452,11 @@ function txp_wraptag($atts, $thing = '')
 
     !isset($default) or trim($thing) !== '' or $thing = $default;
 
-    if (isset($trim)) {
+    if ($replace === true) {
+        $sep = isset($trim) && $trim !== true ? $trim : ',';
+        $thing = isset($trim) ? do_list_unique($thing, $sep, $trim === true ? TEXTPATTERN_STRIP_EMPTY : TEXTPATTERN_STRIP_EMPTY_STRING) : array_unique(explode($sep, $thing));
+        $thing = implode($sep, $thing);
+    } elseif (isset($trim)) {
         if ($trim === true) {
             $thing = isset($replace) ? preg_replace('/\s+/', $replace, trim($thing)) : trim($thing);
         } elseif (strlen($trim) > 2 && preg_match('/([^\\\w\s]).+\1[UsiAmuS]*$/As', $trim)) {

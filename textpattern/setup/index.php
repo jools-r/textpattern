@@ -434,7 +434,7 @@ function step_getTxpLogin()
     $public_themes_class->setDirPath(txpath.DS.'setup'.DS.'themes');
     $vals = array_merge($public_themes_class->getUploaded(false), $vals);
 
-    $public_theme_name = (empty($cfg['site']['public_theme']) ? 'four-point-eight' : $cfg['site']['public_theme']);
+    $public_theme_name = (empty($cfg['site']['public_theme']) ? 'four-point-nine' : $cfg['site']['public_theme']);
 
     $public_theme_chooser = selectInput('public_theme', $vals, $public_theme_name, '', '', 'setup_public_theme');
 
@@ -477,7 +477,7 @@ function step_getTxpLogin()
         inputLabel(
             'setup_site_url',
             fInput('text', 'siteurl', @$cfg['site']['public_url'], '', '', '', INPUT_REGULAR, '', 'setup_site_url', '', true),
-            'please_enter_url', 'setup_site_url', array('class' => 'txp-form-field')
+            'please_enter_url', 'siteurl', array('class' => 'txp-form-field')
         ).
         inputLabel(
             'setup_admin_theme',
@@ -554,16 +554,18 @@ function step_fbCreate()
     if (defined('is_multisite')) {
         $multisite_admin_login_url = $GLOBALS['protocol'].$cfg['site']['admin_url'];
     }
-    // Clear the session so no data is leaked.
-    $_SESSION = $cfg = array();
+
     $warnings = @find_temp_dir() ? '' : msg(gTxt('set_temp_dir_prefs'), MSG_ALERT);
     if (defined('is_multisite')) {
-        $login_url  = $multisite_admin_login_url.DS.'index.php';
+        $login_url  = $multisite_admin_login_url.DS.'index.php?lang='.$cfg['site']['language_code'];
         $setup_path = multisite_root_path.DS.'admin'.DS;
     } else {
-        $login_url  = $GLOBALS['rel_txpurl'].DS.'index.php';
+        $login_url  = $GLOBALS['rel_txpurl'].DS.'index.php?lang='.$cfg['site']['language_code'];
         $setup_path = DS.basename(txpath).DS;
     }
+
+    // Clear the session so no data is leaked.
+    $_SESSION = $cfg = array();
 
     echo txp_setup_progress_meter(4).
         n.'<div class="txp-setup">'.

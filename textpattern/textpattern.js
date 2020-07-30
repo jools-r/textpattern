@@ -107,13 +107,14 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
             opt = $.extend(form.opt, opt);
         } else {
             opt = $.extend(defaults, opt);
-            form.boxes = opt.checkbox;
             form.editMethod = $this.find(opt.actions);
             form.lastCheck = null;
             form.opt = opt;
             form.selectAll = $this.find(opt.selectAll);
             form.button = $this.find(opt.submitButton);
         }
+
+        form.boxes = $this.find(opt.checkbox);
 
         /**
          * Registers a multi-edit option.
@@ -187,7 +188,7 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
                 'checked': true
             }, options);
 
-            var obj = $this.find(form.boxes);
+            var obj = form.boxes;//$this.find(opt.checkbox);
 
             if (settings.value !== null) {
                 obj = obj.filter(function () {
@@ -202,6 +203,7 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
             }
 
             obj.filter(settings.checked ? ':not(:checked)' : ':checked').prop('checked', settings.checked).change();
+            lib.highlight();
 
             return methods;
         };
@@ -213,9 +215,21 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
          */
 
         lib.highlight = function () {
-            var element = $this.find(form.boxes);
-            element.filter(':checked').closest(opt.highlighted).addClass(opt.selectedClass);
-            element.filter(':not(:checked)').closest(opt.highlighted).removeClass(opt.selectedClass);
+            var checked = form.boxes.filter(':checked'), count = checked.length,
+                option = form.editMethod.find('[value=""]');
+            checked.closest(opt.highlighted).addClass(opt.selectedClass);
+            form.boxes.filter(':not(:checked)').closest(opt.highlighted).removeClass(opt.selectedClass);
+
+            option.gTxt('with_selected_option', {
+                '{count}': count
+            });
+            form.selectAll.prop('checked', count === form.boxes.length).change();
+            form.editMethod.prop('disabled', !count);
+
+            if (!count) {
+                form.editMethod.val('').change();
+            }
+
             return lib;
         };
 
@@ -226,14 +240,10 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
          */
 
         lib.extendedClick = function () {
-            if (opt.rowClick) {
-                var selector = opt.row;
-            } else {
-                var selector = form.boxes;
-            }
+            var selector = opt.rowClick ? opt.row : opt.checkbox;
 
             $this.on('click', selector, function (e) {
-                var self = ($(e.target).is(form.boxes) || $(this).is(form.boxes));
+                var self = ($(e.target).is(opt.checkbox) || $(this).is(opt.checkbox));
 
                 if (!self && (e.target != this || $(this).is('a, :input') || $(e.target).is('a, :input'))) {
                     return;
@@ -243,7 +253,7 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
                     return;
                 }
 
-                var box = $(this).closest(opt.highlighted).find(form.boxes);
+                var box = $(this).closest(opt.highlighted).find(opt.checkbox);
 
                 if (box.length < 1) {
                     return;
@@ -256,7 +266,7 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
                 }
 
                 if (e.shiftKey && form.lastCheck) {
-                    var boxes = $this.find(form.boxes);
+                    var boxes = form.boxes;
                     var start = boxes.index(box);
                     var end = boxes.index(form.lastCheck);
 
@@ -268,11 +278,7 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
                     box.prop('checked', !checked).change();
                 }
 
-                if (checked === false) {
-                    form.lastCheck = box;
-                } else {
-                    form.lastCheck = null;
-                }
+                form.lastCheck = box;
             });
 
             return lib;
@@ -285,31 +291,22 @@ jQuery.fn.txpMultiEditForm = function (method, opt) {
          */
 
         lib.checked = function () {
-            $this.on('change', form.boxes, function (e) {
+            $this.on('change', opt.checkbox, function (e) {
                 var box = $(this);
-                var boxes = $this.find(form.boxes);
 
                 if (box.prop('checked')) {
-                    $(this).closest(opt.highlighted).addClass(opt.selectedClass);
-
                     if (-1 == $.inArray(box.val(), textpattern.Relay.data.selected)) {
                         textpattern.Relay.data.selected.push(box.val());
                     }
                 } else {
-                    $(this).closest(opt.highlighted).removeClass(opt.selectedClass);
-
                     textpattern.Relay.data.selected = $.grep(textpattern.Relay.data.selected, function(value) {
                         return value != box.val();
                     });
                 }
 
                 if (typeof(e.originalEvent) != 'undefined') {
-                    form.selectAll.prop('checked', box.prop('checked') && boxes.filter(':checked').length === boxes.length).change();
+                    lib.highlight();
                 }
-
-                form.editMethod.find('[value=""]').gTxt('with_selected_option', {
-                    '{count}': boxes.filter(':checked').length
-                });
             });
 
             return lib;
@@ -875,9 +872,9 @@ textpattern.Relay.register('txpConsoleLog.ConsoleAPI', function (event, data) {
 }).register('uploadProgress', function (event, data) {
     $('progress.txp-upload-progress').val(data.loaded / data.total);
 }).register('uploadStart', function (event, data) {
-    $('progress.txp-upload-progress').val(0).show();
+    $('progress.txp-upload-progress').val(0).removeClass('ui-helper-hidden');
 }).register('uploadEnd', function (event, data) {
-    $('progress.txp-upload-progress').hide();
+    $('progress.txp-upload-progress').addClass('ui-helper-hidden');
 }).register('updateList', function (event, data) {
     var list = data.list || '#messagepane, .txp-async-update',
         url = data.url || 'index.php',
@@ -2064,6 +2061,29 @@ textpattern.Route.add('article', function () {
         }
     );
 
+    textpattern.Relay.register('article.section_changed',
+        function (event, data) {
+            var $overrideForm = $('#override-form');
+            var override_sel = $overrideForm.val();
+
+            $overrideForm.empty().append('<option></option>');
+
+            $.each(data.data, function(key, item) {
+                var $option = $('<option />');
+                $option.text(item).attr('dir', 'auto').prop('selected', item == override_sel);
+                $overrideForm.append($option);
+            });
+        }
+    );
+
+    $('#txp-write-sort-group').on('change', '#section',
+        function () {
+            textpattern.Relay.callback('article.section_changed', {
+                data: allForms[$(this).find(':selected').data('skin')]
+            });
+        }
+    ).change();
+
     var status = 'select[name=Status]', form = $(status).parents('form'), submitButton = form.find('input[type=submit]');
 
     $('#article_form').on('change', status, function () {
@@ -2315,6 +2335,7 @@ textpattern.Route.add('form', function () {
     });
 
     textpattern.Relay.register('txpAsyncForm.success', function () {
+        $('#allforms_form').txpMultiEditForm('select', {value: textpattern.Relay.data.selected});
         $('#allforms_form_sections').restorePanes();
     });
 });
@@ -2472,7 +2493,8 @@ textpattern.Route.add('plugin.plugin_help', function ()
             $(anchor).contents().unwrap();
         });
 
-        var tabTitle = $tabHead.html();
+        // Grab the heading, strip out markup, then sanitize.
+        var tabTitle = $("<div>").html($tabHead.html()).text();
         var tabName = tabTitle.replace(/[^a-z0-9\s]/gi, '').replace(/[_\s]/g, '_').toLowerCase();
         var sectId = sectIdPrefix + tabName;
 
@@ -2683,7 +2705,7 @@ $(document).ready(function () {
     $('.multi_edit_form').txpMultiEditForm();
     $('table.txp-list').txpColumnize();
 
-    $('a.txp-logout, .txp-logout a').attr('href', 'index.php?logout=1&_txp_token='+textpattern._txp_token);
+    $('a.txp-logout, .txp-logout a').attr('href', 'index.php?logout=1&lang='+textpattern.prefs.language_ui+'&_txp_token='+textpattern._txp_token);
 
     // Initialize panel specific JavaScript.
     textpattern.Route.init();
