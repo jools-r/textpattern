@@ -389,6 +389,8 @@ function image($atts)
 
 function thumbnail($atts)
 {
+    global $doctype;
+
     extract(lAtts(array(
         'escape'    => true,
         'title'     => '',
@@ -398,6 +400,7 @@ function thumbnail($atts)
         'id'        => '',
         'link'      => 0,
         'link_rel'  => '',
+        'loading'   => null,
         'name'      => '',
         'poplink'   => 0, // Deprecated, 4.7
         'style'     => '',
@@ -466,6 +469,10 @@ function thumbnail($atts)
             $out .= ' height="'.(int) $height.'"';
         }
 
+        if ($loading && $doctype == 'html5' && in_array($loading, array('auto', 'eager', 'lazy'))) {
+            $out .= ' loading="'.$loading.'"';
+        }
+
         $out .= ' />';
 
         if ($link && $thumb_) {
@@ -482,11 +489,7 @@ function thumbnail($atts)
                 '\'width='.$w.', height='.$h.', scrollbars, resizable\'); return false;">'.$out.'</a>';
         }
 
-        if ($wraptag) {
-            return doTag($out, $wraptag, $class, '', $html_id);
-        }
-
-        return $out;
+        return $wraptag ? doTag($out, $wraptag, $class, '', $html_id) : $out;
     }
 }
 
@@ -1869,7 +1872,7 @@ function txp_pager($atts, $thing = null, $newer = null)
     }
 
     $pgc = $pg === true ? 'pg' : $pg;
-    $thispg = $pg === true && isset($thispage['pg']) ? $thispage['pg'] : intval(gps($pgc, 1));
+    $thispg = $pg === true && isset($thispage['pg']) ? $thispage['pg'] : intval(gps($pgc, $top));
     $thepg = max(1, min($thispg, $numPages));
 
     if ($get) {
@@ -1896,7 +1899,7 @@ function txp_pager($atts, $thing = null, $newer = null)
         }
     } elseif (is_bool($shift)) {
         $pages = $newer === null ? ($shift ? range(1 - $thepg, $numPages - $thepg) : array(0)) : array($shift ? true : 1);
-        $range = true;
+        $range = !$shift;
     } else {
         $pages = array_map('intval', do_list($shift, array(',', '-')));
         $range = false;
@@ -3218,7 +3221,7 @@ function if_article_image($atts, $thing = null)
 
 function article_image($atts)
 {
-    global $thisarticle;
+    global $doctype, $thisarticle;
 
     assert_article();
 
@@ -3232,6 +3235,7 @@ function article_image($atts)
         'height'    => '',
         'thumbnail' => 0,
         'wraptag'   => '',
+        'loading'   => null,
     ), $atts));
 
     if ($thisarticle['article_image']) {
@@ -3264,23 +3268,23 @@ function article_image($atts)
 
         $out = '<img src="'.imagesrcurl($id, $ext, !empty($atts['thumbnail'])).
             '" alt="'.txpspecialchars($alt, ENT_QUOTES, 'UTF-8', false).'"'.
-            ($title ? ' title="'.txpspecialchars($title, ENT_QUOTES, 'UTF-8', false).'"' : '').
-            (($html_id && !$wraptag) ? ' id="'.txpspecialchars($html_id).'"' : '').
-            (($class && !$wraptag) ? ' class="'.txpspecialchars($class).'"' : '').
-            ($style ? ' style="'.txpspecialchars($style).'"' : '').
-            ($width ? ' width="'.(int) $width.'"' : '').
-            ($height ? ' height="'.(int) $height.'"' : '').
-            ' />';
+            ($title ? ' title="'.txpspecialchars($title, ENT_QUOTES, 'UTF-8', false).'"' : '');
     } else {
         $out = '<img src="'.txpspecialchars($image).'" alt=""'.
-            ($title && $title !== true ? ' title="'.txpspecialchars($title).'"' : '').
-            (($html_id && !$wraptag) ? ' id="'.txpspecialchars($html_id).'"' : '').
-            (($class && !$wraptag) ? ' class="'.txpspecialchars($class).'"' : '').
-            ($style ? ' style="'.txpspecialchars($style).'"' : '').
-            ($width ? ' width="'.(int) $width.'"' : '').
-            ($height ? ' height="'.(int) $height.'"' : '').
-            ' />';
+            ($title && $title !== true ? ' title="'.txpspecialchars($title).'"' : '');
     }
+
+    if ($loading && $doctype == 'html5' && in_array($loading, array('auto', 'eager', 'lazy'))) {
+        $out .= ' loading="'.$loading.'"';
+    }
+
+    $out .=
+        (($html_id && !$wraptag) ? ' id="'.txpspecialchars($html_id).'"' : '').
+        (($class && !$wraptag) ? ' class="'.txpspecialchars($class).'"' : '').
+        ($style ? ' style="'.txpspecialchars($style).'"' : '').
+        ($width ? ' width="'.(int) $width.'"' : '').
+        ($height ? ' height="'.(int) $height.'"' : '').
+        ' />';
 
     return ($wraptag) ? doTag($out, $wraptag, $class, '', $html_id) : $out;
 }
@@ -5229,7 +5233,12 @@ function txp_eval($atts, $thing = null)
         'test'  => !isset($atts['query']),
     ), $atts));
 
-    if (!isset($query)) {
+    if (!isset($thing) && isset($atts['test']) && $atts['test'] !== true) {
+        $thing = $atts['test'];
+        $test = null;
+    }
+
+    if (!isset($query) || $query === true) {
         $x = true;
     } elseif (!($query = trim($query))) {
         $x = $query;
@@ -5271,46 +5280,47 @@ function txp_eval($atts, $thing = null)
         }
 
         if (strpos($query, '<+>') !== false) {
-            if (!$test) {
-                $quoted = txp_escape(array('escape' => 'quote'), parse($thing));
-                $query = str_replace('<+>', $quoted, $query);
-                $staged = false;
-            } else {
-                $staged = true;
+            $staged = $x = true;
+        } else {
+            $x = $xpath->evaluate($query);
+
+            if ($x instanceof DOMNodeList) {
+                $x = $x->length;
             }
-        }
-
-        $x = $staged ? true : $xpath->evaluate($query);
-
-        if ($x instanceof DOMNodeList) {
-            $x = $x->length;
         }
     } else {
         trigger_error(gTxt('missing_dom_extension'));
         return '';
     }
 
-    if (!isset($thing) || $x && $staged === false) {
-        return $x;
+    if (!isset($thing)) {
+        return $test === true ? !empty($x) : $x;
     } elseif (empty($x)) {
         return parse($thing, false);
     }
 
     $txp_atts['evaluate'] = $test;
-    $thing = parse($thing);
+    $x = parse($thing);
     unset($txp_atts['evaluate']);
 
     if ($txp_tag) {
         if ($staged) {
-            $quoted = txp_escape(array('escape' => 'quote'), $thing);
+            $quoted = txp_escape(array('escape' => 'quote'), $x);
             $query = str_replace('<+>', $quoted, $query);
-            $thing = $xpath->evaluate($query);
+            $query = $xpath->evaluate($query);
+            $query = $query instanceof DOMNodeList ? $query->length : $query;
+
+            if (empty($query)) {
+                return parse($thing, false);
+            } else {
+                return $test === true ? $x : $query;
+            }
         }
     } else {
         $txp_atts = null;
     }
 
-    return $thing instanceof DOMNodeList ? $thing->length : $thing;
+    return $test === null && $query !== true ? !empty($x) : $x;
 }
 
 // -------------------------------------------------------------
