@@ -3875,7 +3875,7 @@ function meta_keywords($atts)
     global $id_keywords;
 
     extract(lAtts(array(
-        'escape'    => null,
+        'escape'    => true,
         'format'    => 'meta', // or empty for raw value
         'separator' => null,
     ), $atts));
@@ -3883,7 +3883,7 @@ function meta_keywords($atts)
     $out = '';
 
     if ($id_keywords) {
-        $content = ($escape === null) ? txpspecialchars($id_keywords) : $id_keywords;
+        $content = ($escape === true) ? txpspecialchars($id_keywords) : txp_escape($escape, $id_keywords);
 
         if ($separator !== null) {
             $content = implode($separator, do_list($content));
@@ -3910,7 +3910,7 @@ function meta_keywords($atts)
 function meta_description($atts)
 {
     extract(lAtts(array(
-        'escape' => null,
+        'escape' => true,
         'format' => 'meta', // or empty for raw value
         'type'   => null,
     ), $atts));
@@ -3919,7 +3919,7 @@ function meta_description($atts)
     $content = getMetaDescription($type);
 
     if ($content) {
-        $content = ($escape === null ? txpspecialchars($content) : $content);
+        $content = ($escape === true) ? txpspecialchars($content) : txp_escape($escape, $content);
 
         if ($format === 'meta') {
             $out = '<meta name="description" content="'.$content.'" />';
@@ -3956,7 +3956,7 @@ function meta_author($atts)
     global $id_author;
 
     extract(lAtts(array(
-        'escape' => null,
+        'escape' => true,
         'format' => 'meta', // or empty for raw value
         'title'  => 0,
     ), $atts));
@@ -3965,7 +3965,7 @@ function meta_author($atts)
 
     if ($id_author) {
         $display_name = ($title) ? get_author_name($id_author) : $id_author;
-        $display_name = ($escape === null) ? txpspecialchars($display_name) : $display_name;
+        $display_name = ($escape === true) ? txpspecialchars($display_name) : txp_escape($escape, $display_name);
 
         if ($format === 'meta') {
             // Can't use tag_void() since it escapes its content.
