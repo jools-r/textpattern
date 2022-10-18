@@ -473,7 +473,7 @@ function image($atts)
             $out .= ' loading="'.$loading.'"';
         }
 
-        $out .= ' />';
+        $out .= (get_pref('doctype', 'html5') ? '>' : ' />');
 
         if ($link && $thumb_) {
             $attribs = '';
@@ -3288,7 +3288,7 @@ function article_image($atts)
             ($style ? ' style="'.txpspecialchars($style).'"' : '').
             ($width ? ' width="'.(int) $width.'"' : '').
             ($height ? ' height="'.(int) $height.'"' : '').
-            ' />';
+            (get_pref('doctype', 'html5') ? '>' : ' />');
 
             $out[] = $img;
     }
@@ -3922,7 +3922,7 @@ function meta_description($atts)
         $content = ($escape === true) ? txpspecialchars($content) : txp_escape($escape, $content);
 
         if ($format === 'meta') {
-            $out = '<meta name="description" content="'.$content.'" />';
+            $out = '<meta name="description" content="'.$content.'"'.(get_pref('doctype', 'html5') ? '>' : ' />');
         } else {
             $out = $content;
         }
