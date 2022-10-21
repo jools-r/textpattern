@@ -265,7 +265,8 @@ class wet_thumb
             $this->_SRC['width'] = 100;
         }
 
-        // Check exif orientation of source image.
+        // Check exif orientation of JPEG source image.
+        if ($this->_SRC['type'] == 2) { // JPEG format
         $exif = exif_read_data($this->_SRC['file']);
         if (!empty($exif['Orientation'])) {
             // Correct thumbnail orientation based on exif value.
@@ -291,6 +292,7 @@ class wet_thumb
             // Flip thumbnail if exif orientation is mirrored.
             if (in_array($exif['Orientation'], [2, 5, 7, 4])) {
                 imageflip($this->_SRC['image'], IMG_FLIP_HORIZONTAL);
+                }
             }
         }
 
