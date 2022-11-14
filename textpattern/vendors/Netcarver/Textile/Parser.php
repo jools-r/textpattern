@@ -371,7 +371,7 @@ class Parser
      * @var string
      */
 
-    protected $ver = '3.7.6';
+    protected $ver = '3.7.7';
 
     /**
      * Regular expression snippets.
@@ -1229,22 +1229,38 @@ class Parser
         throw new \InvalidArgumentException('Invalid doctype given.');
     }
 
-    /**
-     * Gets the current output document type.
-     *
-     * bc. $parser = new \Netcarver\Textile\Parser();
-     * echo $parser->getDocumentType();
-     *
-     * @return string The document type
-     * @since  3.6.0
-     * @see    Parser::setDocumentType()
-     * @api
-     */
+     /**
+      * Gets the current output document type.
+      *
+      * bc. $parser = new \Netcarver\Textile\Parser();
+      * echo $parser->getDocumentType();
+      *
+      * @return string The document type
+      * @since  3.6.0
+      * @see    Parser::setDocumentType()
+      * @api
+      */
 
-    public function getDocumentType()
-    {
-        return $this->doctype;
-    }
+     public function getDocumentType()
+     {
+         return $this->doctype;
+     }
+
+     /**
+      * Output line break according to document type.
+      *
+      * @return string The break tag
+      * @since  3.7.7
+      * @see    Parser::getDocumentType()
+      * @api
+      */
+
+     public function getLineBreak()
+     {
+
+         $out = ($this->getDocumentType() === 'html5') ? '<br>' : '<br />';
+         return $out;
+     }
 
     /**
      * Sets the document root directory path.
@@ -1997,7 +2013,7 @@ class Parser
         $text = $this->retrieveTags($text);
         $text = $this->retrieveURLs($text);
 
-        $text = str_replace("<br />", "<br />\n", $text);
+        $text = preg_replace("~<br[ ]*/?>~i", $this->getLineBreak()."\n", $text);
 
         return $text;
     }
@@ -2445,13 +2461,14 @@ class Parser
      *
      * @param  string $name        The HTML element name
      * @param  array  $atts        HTML attributes applied to the tag
+     * @param  string $doctype     The output document type, either 'xhtml' or 'html5'
      * @param  bool   $selfclosing Determines if the tag should be self closing
      * @return Tag
      */
 
-    protected function newTag($name, $atts, $selfclosing = true)
+    protected function newTag($name, $atts, $doctype = 'xhtml', $selfclosing = true)
     {
-        return new Tag($name, $atts, $selfclosing);
+        return new Tag($name, $atts, $doctype, $selfclosing);
     }
 
     /**
@@ -2954,7 +2971,7 @@ class Parser
                     $def = trim($def);
 
                     if ($this->isLineWrapEnabled()) {
-                        $def = str_replace("\n", "<br />", $def);
+                        $def = str_replace("\n", $this->getLineBreak(), $def);
                     }
 
                     if ($pos === 0) {
@@ -2962,7 +2979,7 @@ class Parser
                     }
 
                     if ($this->isLineWrapEnabled()) {
-                        $term = str_replace("\n", "<br />", $term);
+                        $term = str_replace("\n", $this->getLineBreak(), $term);
                     }
 
                     $term = $this->graf($term);
@@ -3212,7 +3229,7 @@ class Parser
         // Replaces those LFs that aren't followed by white-space, or at end, with <br /> or a space.
         $m['content'] = preg_replace(
             "/\n(?![\s|])/",
-            $this->isLineWrapEnabled() ? '<br />' : ' ',
+            $this->isLineWrapEnabled() ? $this->getLineBreak() : ' ',
             $m['content']
         );
 
@@ -3230,7 +3247,7 @@ class Parser
     {
         $content = preg_replace(
             "@(.+)(?<!<br>|<br />|</li>|</dd>|</dt>)\n(?![\s|])@",
-            $this->isLineWrapEnabled() ? '$1<br />' : '$1 ',
+            $this->isLineWrapEnabled() ? '$1'.$this->getLineBreak() : '$1 ',
             $m['content']
         );
 
@@ -3327,8 +3344,10 @@ class Parser
                 }
             }
 
-            $block = $this->doPBr($block);
-            $block = $whitespace. str_replace('<br>', '<br />', $block);
+            $block = $whitespace . $this->doPBr($block);
+            if ($this->getDocumentType() === 'xhtml') {
+                $block = str_replace('<br>', '<br />', $block);
+            }
 
             if ($ext && $anonymous_block) {
                 $out[count($out)-1] .= $block;
@@ -4255,7 +4274,7 @@ class Parser
         $in = $m[0];
         $pre = $m['pre'];
         if ($this->isLineWrapEnabled()) {
-            $inner = str_replace("\n", '<br />', $m['inner']);
+            $inner = str_replace("\n", $this->getLineBreak(), $m['inner']);
         } else {
             $inner = str_replace("\n", ' ', $m['inner']);
         }
@@ -4441,6 +4460,7 @@ class Parser
         $a = $this->newTag(
             'a',
             $this->parseAttribsToArray($atts),
+            $this->doctype,
             false
         )->title($title)->href($url, true)->rel($this->rel);
         $tags = $this->storeTags((string) $a, '</a>');
@@ -4764,7 +4784,7 @@ class Parser
             $title = $this->encodeHTML($title);
         }
 
-        $img = $this->newTag('img', $this->parseAttribsToArray($atts, '', true, $extras))
+        $img = $this->newTag('img', $this->parseAttribsToArray($atts, '', true, $extras), $this->doctype)
             ->align($align)
             ->alt($title, true)
             ->src($this->shelveURL($url, 'image'), true)
@@ -4785,7 +4805,7 @@ class Parser
 
         if ($href) {
             $href = $this->shelveURL($href);
-            $link = $this->newTag('a', array(), false)->href($href)->rel($this->rel);
+            $link = $this->newTag('a', array(), $this->doctype, false)->href($href)->rel($this->rel);
             $out = (string) $link . "$img</a>";
         }
 

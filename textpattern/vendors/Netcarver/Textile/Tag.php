@@ -77,18 +77,28 @@ class Tag extends DataBag
     protected $selfclose;
 
     /**
+     * Target document type.
+     *
+     * @var string
+     */
+
+    protected $doctype;
+
+    /**
      * Constructor.
      *
      * @param string|null $name        The tag name
      * @param array       $attributes  An array of attributes
+     * @param string      $doctype     The output document type, either 'xhtml' or 'html5'
      * @param bool        $selfclosing Whether the tag is self-closing
      */
 
-    public function __construct($name, array $attributes = null, $selfclosing = true)
+    public function __construct($name, array $attributes = null, $doctype = 'xhtml', $selfclosing = true)
     {
         parent::__construct($attributes);
         $this->tag = $name;
         $this->selfclose = $selfclosing;
+        $this->doctype = $doctype;
     }
 
     /**
@@ -113,7 +123,7 @@ class Tag extends DataBag
         }
 
         if ($this->tag) {
-            return '<' . $this->tag . $attributes . (($this->selfclose) ? " />" : '>');
+            return '<' . $this->tag . $attributes . (($this->selfclose && $this->doctype === 'xhtml') ? ' />' : '>');
         }
 
         return $attributes;
