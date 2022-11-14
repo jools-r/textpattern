@@ -2006,7 +2006,7 @@ class Parser
      * Parses the given Textile input in un-restricted mode.
      *
      * This method is deprecated, use Parser::parse() method instead.
-     * This method is equilavent of:
+     * This method is equivalent of:
      *
      * bc. $parser = new \Netcarver\Textile\Parser();
      * echo $parser->parse('h1. Hello World!');
@@ -2400,7 +2400,7 @@ class Parser
      * Cleans a HTML attribute value.
      *
      * This method checks for presence of URL encoding in the value.
-     * If the number encoded characters exceeds the thereshold,
+     * If the number encoded characters exceeds the threshold,
      * the input is discarded. Otherwise the encoded
      * instances are decoded.
      *
@@ -2445,7 +2445,7 @@ class Parser
      *
      * @param  string $name        The HTML element name
      * @param  array  $atts        HTML attributes applied to the tag
-     * @param  bool   $selfclosing Determines if the tag should be selfclosing
+     * @param  bool   $selfclosing Determines if the tag should be self closing
      * @return Tag
      */
 
