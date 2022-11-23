@@ -50,11 +50,14 @@ namespace Netcarver\Textile;
  * $img = new Tag('img');
  * echo (string) $img->class('big blue')->src('images/elephant.jpg');
  *
- * @method Tag alt(string $text)
+ * @method Tag alt(string $text, bool $allowEmpty = false)
  * @method Tag align(string $alignment)
+ * @method Tag height(string|int $height)
  * @method Tag href(string $url, bool $allowEmpty = false)
  * @method Tag rel(string $relationship)
+ * @method Tag src(string $url, bool $allowEmpty = false)
  * @method Tag title(string $title)
+ * @method Tag width(string|int $width)
  * @internal
  */
 
@@ -87,10 +90,10 @@ class Tag extends DataBag
     /**
      * Constructor.
      *
-     * @param string|null $name        The tag name
-     * @param array       $attributes  An array of attributes
-     * @param string      $doctype     The output document type, either 'xhtml' or 'html5'
-     * @param bool        $selfclosing Whether the tag is self-closing
+     * @param string|null $name The tag name
+     * @param array<string, int|string> $attributes  An array of attributes
+     * @param string  $doctype The output document type, either 'xhtml' or 'html5'
+     * @param bool  $selfclosing Whether the tag is self-closing
      */
 
     public function __construct($name, array $attributes = null, $doctype = 'xhtml', $selfclosing = true)
