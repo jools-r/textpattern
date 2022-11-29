@@ -5105,7 +5105,7 @@ function if_request($atts, $thing = null)
 function txp_eval($atts, $thing = null)
 {
     global $prefs, $txp_tag, $txp_atts;
-    static $xpath = null, $functions = null;
+    static $xpath = null, $functions = null, $_functions = null;
 
     unset($txp_atts['evaluate']);
     $staged = null;
@@ -5364,7 +5364,7 @@ function txp_wraptag($atts, $thing = '')
     static $regex = '/([^\\\w\s]).+\1[UsiAmuS]*$/As';
 
     extract(lAtts(array(
-        'escape'   => null,
+        'escape'   => '',
         'label'    => '',
         'labeltag' => '',
         'wraptag'  => '',
