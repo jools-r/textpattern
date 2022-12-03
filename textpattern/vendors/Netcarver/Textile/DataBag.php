@@ -50,7 +50,6 @@ namespace Netcarver\Textile;
  *
  * @internal
  */
-
 class DataBag
 {
     /**
@@ -58,7 +57,6 @@ class DataBag
      *
      * @var array<string, int|string>
      */
-
     protected $data;
 
     /**
@@ -66,7 +64,6 @@ class DataBag
      *
      * @param array<string, string|int>|null $data The initial data array stored in the bag
      */
-
     public function __construct(array $data = null)
     {
         $this->data = (array) $data;
@@ -86,7 +83,6 @@ class DataBag
      * @param array<int, int|string> $params Arguments
      * @return DataBag
      */
-
     public function __call($name, array $params)
     {
         if (!empty($params[1]) || !empty($params[0])) {

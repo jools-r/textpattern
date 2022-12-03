@@ -60,7 +60,6 @@ namespace Netcarver\Textile;
  * @method Tag width(string|int $width)
  * @internal
  */
-
 class Tag extends DataBag
 {
     /**
@@ -68,7 +67,6 @@ class Tag extends DataBag
      *
      * @var string|null
      */
-
     protected $tag;
 
     /**
@@ -76,32 +74,20 @@ class Tag extends DataBag
      *
      * @var bool
      */
-
     protected $selfclose;
-
-    /**
-     * Target document type.
-     *
-     * @var string
-     */
-
-    protected $doctype;
 
     /**
      * Constructor.
      *
      * @param string|null $name The tag name
      * @param array<string, int|string> $attributes  An array of attributes
-     * @param string  $doctype The output document type, either 'xhtml' or 'html5'
      * @param bool  $selfclosing Whether the tag is self-closing
      */
-
-    public function __construct($name, array $attributes = null, $doctype = 'xhtml', $selfclosing = true)
+    public function __construct($name, array $attributes = null, $selfclosing = true)
     {
         parent::__construct($attributes);
         $this->tag = $name;
         $this->selfclose = $selfclosing;
-        $this->doctype = $doctype;
     }
 
     /**
@@ -113,7 +99,6 @@ class Tag extends DataBag
      *
      * @return string A HTML element
      */
-
     public function __toString()
     {
         $attributes = '';
@@ -126,7 +111,7 @@ class Tag extends DataBag
         }
 
         if ($this->tag) {
-            return '<' . $this->tag . $attributes . (($this->selfclose && $this->doctype === 'xhtml') ? ' />' : '>');
+            return '<' . $this->tag . $attributes . (($this->selfclose) ? ' />' : '>');
         }
 
         return $attributes;
