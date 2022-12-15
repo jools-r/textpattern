@@ -384,7 +384,7 @@ class Parser
      *
      * @var string
      */
-    protected $ver = '3.8.0-dev';
+    protected $ver = '4.0.0';
 
     /**
      * Regular expression snippets.
@@ -1203,18 +1203,6 @@ class Parser
     public function getDocumentType()
     {
         return $this->doctype;
-    }
-
-    /**
-     * Output line break according to document type.
-     *
-     * @return string The break tag
-     * @since  3.8.0
-     * @see    Parser::getDocumentType()
-     */
-    protected function getLineBreak()
-    {
-        return ($this->getDocumentType() === self::DOCTYPE_HTML5) ? '<br>' : '<br />';
     }
 
     /**
@@ -2115,6 +2103,18 @@ class Parser
     {
         trigger_error('Parser::textileCommon() is deprecated.', E_USER_DEPRECATED);
         return $this->setLite($lite)->parse($text);
+    }
+
+    /**
+     * Output line break according to document type.
+     *
+     * @return string The break tag
+     * @since  4.0.0
+     * @see    Parser::getDocumentType()
+     */
+    protected function getLineBreak()
+    {
+        return ($this->getDocumentType() === self::DOCTYPE_HTML5) ? '<br>' : '<br />';
     }
 
     /**
